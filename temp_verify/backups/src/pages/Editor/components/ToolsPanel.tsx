@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Stack, IconButton, Tooltip, Divider } from '@mui/material';
 import {
   SmartButton as ButtonIcon,
@@ -8,16 +8,11 @@ import {
   List as ChoiceIcon,
   Collections as GalleryIcon,
   Download as ExportIcon,
-  VideoCall as VideoIcon,
-  Image as ImageIcon,
-  TextFields as TextIcon,
-  Upload as UploadIcon
 } from '@mui/icons-material';
 import { useEditorStore } from '../../../stores/editorStore';
 import type { ElementType } from '../../../stores/editorStore';
 import VideoUploader from '../../../components/common/VideoUploader';
 import { generateVastXml } from '../../../services/vastExporter';
-import { ExportDialog } from '../../../components/export/ExportDialog';
 
 const tools: { type: Exclude<ElementType, 'video'>; icon: React.ComponentType; tooltip: string }[] = [
   { type: 'button', icon: ButtonIcon, tooltip: 'Añadir Botón' },
@@ -88,7 +83,6 @@ const ToolsPanel: React.FC = () => {
     background: state.background,
     timeline: state.timeline
   }));
-  const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   const handleAddElement = (type: Exclude<ElementType, 'video'>) => {
     addElement(type, defaultContent[type]);
@@ -136,51 +130,39 @@ const ToolsPanel: React.FC = () => {
   };
 
   return (
-    <>
-      <Stack spacing={1}>
-        <VideoUploader />
-        {tools.map(({ type, icon: Icon, tooltip }) => (
-          <Tooltip key={type} title={tooltip} placement="right">
-            <IconButton
-              onClick={() => handleAddElement(type)}
-              sx={{
-                width: '44px',
-                height: '44px',
-              }}
-            >
-              <Icon />
-            </IconButton>
-          </Tooltip>
-        ))}
-        <Divider sx={{ my: 1 }} />
-        <Tooltip title="Exportar VAST" placement="right">
+    <Stack spacing={1}>
+      <VideoUploader />
+      {tools.map(({ type, icon: Icon, tooltip }) => (
+        <Tooltip key={type} title={tooltip} placement="right">
           <IconButton
-            onClick={handleExportVast}
+            onClick={() => handleAddElement(type)}
             sx={{
               width: '44px',
               height: '44px',
-              backgroundColor: 'primary.main',
-              color: 'white',
-              '&:hover': {
-                backgroundColor: 'primary.dark',
-              },
             }}
           >
-            <ExportIcon />
+            <Icon />
           </IconButton>
         </Tooltip>
-        <Tooltip title="Exportar" placement="right">
-          <IconButton onClick={() => setExportDialogOpen(true)}>
-            <UploadIcon />
-          </IconButton>
-        </Tooltip>
-      </Stack>
-
-      <ExportDialog
-        open={exportDialogOpen}
-        onClose={() => setExportDialogOpen(false)}
-      />
-    </>
+      ))}
+      <Divider sx={{ my: 1 }} />
+      <Tooltip title="Exportar VAST" placement="right">
+        <IconButton
+          onClick={handleExportVast}
+          sx={{
+            width: '44px',
+            height: '44px',
+            backgroundColor: 'primary.main',
+            color: 'white',
+            '&:hover': {
+              backgroundColor: 'primary.dark',
+            },
+          }}
+        >
+          <ExportIcon />
+        </IconButton>
+      </Tooltip>
+    </Stack>
   );
 };
 
