@@ -29,14 +29,17 @@ const BackgroundUploader: React.FC = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      // Usar la URL interna de Render para servicios privados
-      const assetsUrl = 'http://adsmood-ctv-assets.internal:80';
+      // Usar la URL correcta de Render para servicios privados
+      const assetsUrl = 'http://adsmood-ctv-assets.onrender.com';
       
       console.log('Intentando subir archivo a:', `${assetsUrl}/upload`);
       
       const response = await fetch(`${assetsUrl}/upload`, {
         method: 'POST',
         body: formData,
+        headers: {
+          'Accept': 'application/json',
+        }
       });
 
       if (!response.ok) {
@@ -50,11 +53,9 @@ const BackgroundUploader: React.FC = () => {
         throw new Error('La respuesta del servidor no incluye la URL del archivo');
       }
 
-      // Usar la URL pública para acceder al archivo
-      const publicUrl = import.meta.env.VITE_ASSETS_URL;
-      
+      // Usar la misma URL para acceder al archivo
       setBackground({
-        url: `${publicUrl}${data.url}`,
+        url: `${assetsUrl}${data.url}`,
         type: file.type.startsWith('video/') ? 'video' : 'image',
         style,
       });
