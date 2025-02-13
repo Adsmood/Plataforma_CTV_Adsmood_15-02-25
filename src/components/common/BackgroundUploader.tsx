@@ -23,14 +23,26 @@ const BackgroundUploader: React.FC = () => {
     scale: 1,
     position: { x: 50, y: 50 },
   });
+  const [uploading, setUploading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleFileAccepted = async (file: File) => {
     try {
+      setError(null);
+      setUploading(true);
+      
       const formData = new FormData();
       formData.append('file', file);
 
-      // Usar la URL correcta de Render para servicios privados
-      const assetsUrl = import.meta.env.VITE_ASSETS_URL;
+      // Validar y formatear la URL del servicio de assets
+      const assetsUrl = import.meta.env.VITE_ASSETS_URL?.replace(/\/$/, '') || 'https://adsmood-ctv-assets.onrender.com';
+      
+      // Validar que la URL sea válida
+      try {
+        new URL(`${assetsUrl}/upload`);
+      } catch (e) {
+        throw new Error(`URL del servicio de assets inválida: ${assetsUrl}`);
+      }
       
       console.log('Intentando subir archivo a:', `${assetsUrl}/upload`);
       
@@ -42,32 +54,35 @@ const BackgroundUploader: React.FC = () => {
         }
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorText = await response.text();
         console.error('Error de respuesta:', {
           status: response.status,
           statusText: response.statusText,
-          body: errorText
+          data
         });
-        throw new Error(`Error al subir el archivo (${response.status}): ${errorText}`);
+        throw new Error(data.error || `Error al subir el archivo (${response.status})`);
       }
 
-      const data = await response.json();
-      
-      if (!data.url) {
+      if (!data.success || !data.url) {
         throw new Error('La respuesta del servidor no incluye la URL del archivo');
       }
 
-      // Usar la URL del servidor para el archivo
+      // Asegurarnos de que la URL del archivo sea absoluta
+      const fileUrl = data.url.startsWith('http') ? data.url : `${assetsUrl}${data.url}`;
+      
       setBackground({
-        url: `${assetsUrl}${data.url}`,
+        url: fileUrl,
         type: file.type.startsWith('video/') ? 'video' : 'image',
         style,
       });
       setOpen(false);
     } catch (error) {
       console.error('Error al procesar el fondo:', error);
-      // Aquí podrías mostrar un mensaje de error al usuario
+      setError(error instanceof Error ? error.message : 'Error desconocido al subir el archivo');
+    } finally {
+      setUploading(false);
     }
   };
 
@@ -101,7 +116,10 @@ const BackgroundUploader: React.FC = () => {
           p: 1,
         }}
       >
-        <IconButton onClick={() => setOpen(true)}>
+        <IconButton 
+          onClick={() => setOpen(true)}
+          aria-label="Agregar fondo"
+        >
           <AddIcon />
         </IconButton>
         
@@ -119,6 +137,7 @@ const BackgroundUploader: React.FC = () => {
                   onChange={(_: Event, value: number | number[]) => 
                     handleStyleChange('scale', Array.isArray(value) ? value[0] : value)
                   }
+                  aria-label="Escala"
                 />
               </Box>
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
@@ -131,6 +150,7 @@ const BackgroundUploader: React.FC = () => {
                   onChange={(_: Event, value: number | number[]) =>
                     handleStyleChange('position', { x: Array.isArray(value) ? value[0] : value })
                   }
+                  aria-label="Posición horizontal"
                 />
               </Box>
               <Slider
@@ -143,6 +163,7 @@ const BackgroundUploader: React.FC = () => {
                 onChange={(_: Event, value: number | number[]) =>
                   handleStyleChange('position', { y: Array.isArray(value) ? value[0] : value })
                 }
+                aria-label="Posición vertical"
               />
             </Stack>
           </Box>
@@ -151,11 +172,12 @@ const BackgroundUploader: React.FC = () => {
 
       <Dialog
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={() => !uploading && setOpen(false)}
         maxWidth="sm"
         fullWidth
+        aria-labelledby="upload-dialog-title"
       >
-        <Box sx={{ p: 2, height: 300 }}>
+        <Box sx={{ p: 2, height: 300 }} role="dialog" aria-modal="true">
           <FileUploader
             onFileAccepted={handleFileAccepted}
             accept={{
@@ -165,7 +187,29 @@ const BackgroundUploader: React.FC = () => {
             maxSize={52428800} // 50MB
             title="Arrastra una imagen o video aquí, o haz clic para seleccionar"
             icon={<AddIcon />}
+            disabled={uploading}
+            error={error}
           />
+          {uploading && (
+            <Box sx={{ 
+              position: 'absolute', 
+              top: 0, 
+              left: 0, 
+              right: 0, 
+              bottom: 0, 
+              bgcolor: 'rgba(0,0,0,0.5)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'white',
+              zIndex: 1
+            }}
+            role="progressbar"
+            aria-label="Subiendo archivo"
+            >
+              Subiendo archivo...
+            </Box>
+          )}
         </Box>
       </Dialog>
     </>

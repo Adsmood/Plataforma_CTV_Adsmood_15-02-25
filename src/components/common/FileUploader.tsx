@@ -1,82 +1,87 @@
 import React from 'react';
-import { Box, Typography, IconButton } from '@mui/material';
 import { useDropzone } from 'react-dropzone';
-import { Add as AddIcon } from '@mui/icons-material';
-import { motion } from 'framer-motion';
+import { Box, Typography, Alert } from '@mui/material';
 
 interface FileUploaderProps {
   onFileAccepted: (file: File) => void;
-  accept: Record<string, string[]>;
+  accept?: Record<string, string[]>;
   maxSize?: number;
-  title: string;
+  title?: string;
   icon?: React.ReactNode;
+  disabled?: boolean;
+  error?: string | null;
 }
 
 const FileUploader: React.FC<FileUploaderProps> = ({
   onFileAccepted,
   accept,
-  maxSize = 10485760, // 10MB por defecto
-  title,
-  icon = <AddIcon />,
+  maxSize,
+  title = 'Arrastra un archivo aquí o haz clic para seleccionar',
+  icon,
+  disabled = false,
+  error = null,
 }) => {
-  const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
+  const onDropAccepted = (files: File[]) => {
+    if (files.length > 0) {
+      onFileAccepted(files[0]);
+    }
+  };
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDropAccepted,
     accept,
     maxSize,
+    disabled,
     multiple: false,
-    onDropAccepted: ([file]) => onFileAccepted(file),
   });
 
   return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      whileTap={{ scale: 0.98 }}
-      style={{ width: '100%', height: '100%' }}
-    >
+    <Box sx={{ height: '100%', position: 'relative' }}>
       <Box
         {...getRootProps()}
         sx={{
-          width: '100%',
           height: '100%',
+          border: '2px dashed',
+          borderColor: error ? 'error.main' : (isDragActive ? 'primary.main' : 'grey.300'),
+          borderRadius: 1,
           display: 'flex',
           flexDirection: 'column',
           alignItems: 'center',
           justifyContent: 'center',
-          border: '2px dashed',
-          borderColor: isDragReject
-            ? 'error.main'
-            : isDragActive
-            ? 'primary.main'
-            : 'grey.500',
-          borderRadius: 1,
-          bgcolor: isDragActive ? 'action.hover' : 'transparent',
-          cursor: 'pointer',
+          p: 2,
+          cursor: disabled ? 'not-allowed' : 'pointer',
+          opacity: disabled ? 0.5 : 1,
+          bgcolor: isDragActive ? 'action.hover' : 'background.paper',
           transition: 'all 0.2s ease',
-          '&:hover': {
+          '&:hover': disabled ? undefined : {
             bgcolor: 'action.hover',
           },
         }}
       >
         <input {...getInputProps()} />
-        <IconButton
-          sx={{
-            mb: 1,
-            bgcolor: 'action.selected',
-            '&:hover': {
-              bgcolor: 'action.selected',
-            },
-          }}
+        {icon && <Box sx={{ mb: 2, color: error ? 'error.main' : 'primary.main' }}>{icon}</Box>}
+        <Typography
+          variant="body1"
+          align="center"
+          color={error ? 'error' : 'textSecondary'}
         >
-          {icon}
-        </IconButton>
-        <Typography variant="body2" color="text.secondary" align="center">
-          {isDragActive
-            ? '¡Suelta el archivo aquí!'
-            : isDragReject
-            ? 'Archivo no válido'
-            : title}
+          {title}
         </Typography>
       </Box>
-    </motion.div>
+      {error && (
+        <Alert 
+          severity="error" 
+          sx={{ 
+            position: 'absolute',
+            bottom: 8,
+            left: 8,
+            right: 8,
+          }}
+        >
+          {error}
+        </Alert>
+      )}
+    </Box>
   );
 };
 
