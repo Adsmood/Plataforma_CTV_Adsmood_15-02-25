@@ -397,7 +397,7 @@ const useProjectStore = create<ProjectState>()(
               const thumbnail = await html2canvas(retryCanvas as HTMLElement, {
                 width: 200,
                 height: 150,
-                background: '#000000',
+                backgroundColor: '#000000',
                 logging: false,
                 useCORS: true,
                 allowTaint: true,
@@ -414,7 +414,7 @@ const useProjectStore = create<ProjectState>()(
             const thumbnail = await html2canvas(canvas as HTMLElement, {
               width: 200,
               height: 150,
-              background: '#000000',
+              backgroundColor: '#000000',
               logging: false,
               useCORS: true,
               allowTaint: true,
