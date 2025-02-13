@@ -68,7 +68,7 @@ services:
     name: adsmood-ctv-api
     env: node
     plan: starter
-    buildCommand: npm install --location=global --unsafe-perm @nestjs/cli && npm ci && npx prisma generate && npm run build
+    buildCommand: npm install --location=global --unsafe-perm @nestjs/cli && npm ci && npm run build
     startCommand: npm run start:prod
     healthCheckPath: /health
     envVars:
