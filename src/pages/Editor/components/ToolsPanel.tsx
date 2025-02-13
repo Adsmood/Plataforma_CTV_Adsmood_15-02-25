@@ -14,9 +14,10 @@ import {
   Upload as UploadIcon
 } from '@mui/icons-material';
 import { useEditorStore } from '../../../stores/editorStore';
+import useProjectStore from '../../../stores/projectStore';
 import type { ElementType } from '../../../stores/editorStore';
 import VideoUploader from '../../../components/common/VideoUploader';
-import { generateVastXml } from '../../../services/vastExporter';
+import { generateVastXml, downloadVastXml } from '../../../services/vastExporter';
 import { ExportDialog } from '../../../components/export/ExportDialog';
 
 const tools: { type: Exclude<ElementType, 'video'>; icon: React.ComponentType; tooltip: string }[] = [
@@ -88,6 +89,7 @@ const ToolsPanel: React.FC = () => {
     background: state.background,
     timeline: state.timeline
   }));
+  const currentProject = useProjectStore((state) => state.currentProject);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   const handleAddElement = (type: Exclude<ElementType, 'video'>) => {
@@ -95,6 +97,11 @@ const ToolsPanel: React.FC = () => {
   };
 
   const handleExportVast = () => {
+    if (!currentProject) {
+      alert('Por favor, guarda el proyecto antes de exportar el VAST');
+      return;
+    }
+
     const options = {
       baseUrl: window.location.origin,
       impressionUrl: `${window.location.origin}/track/impression`,
@@ -124,15 +131,7 @@ const ToolsPanel: React.FC = () => {
     };
 
     const vastXml = generateVastXml(editorState, options);
-    const blob = new Blob([vastXml], { type: 'application/xml' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `adsmood-vast-${Date.now()}.xml`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadVastXml(vastXml, currentProject.name);
   };
 
   return (
