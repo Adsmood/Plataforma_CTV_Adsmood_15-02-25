@@ -1,11 +1,15 @@
 import { Platform, ExportConfig, ExportResult } from '../types/export';
 import { captureCanvas } from './canvasService';
 
-const ASSETS_URL = import.meta.env.VITE_ASSETS_URL || 'https://adsmood-ctv-assets.onrender.com';
+// Asegurarnos de que la URL tenga el protocolo correcto
+const ensureValidUrl = (url: string): string => {
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    return `https://${url}`;
+  }
+  return url;
+};
 
-if (!ASSETS_URL) {
-  console.error('VITE_ASSETS_URL no está definida');
-}
+const ASSETS_URL = ensureValidUrl(import.meta.env.VITE_ASSETS_URL || 'adsmood-ctv-assets.onrender.com');
 
 console.log('URL del servicio de assets:', ASSETS_URL);
 
@@ -63,7 +67,7 @@ export const exportVideo = async (
     formData.append('config', JSON.stringify(config));
 
     // Construir URL del endpoint
-    const exportUrl = new URL('/export', ASSETS_URL).toString();
+    const exportUrl = `${ASSETS_URL}/export`;
     console.log('URL de exportación:', exportUrl);
 
     // Enviar al endpoint de exportación
@@ -81,7 +85,11 @@ export const exportVideo = async (
     }
 
     const data = await response.json();
-    const videoUrl = new URL(data.url, ASSETS_URL).toString();
+    
+    // Construir URL completa del video
+    const videoUrl = data.url.startsWith('http') 
+      ? data.url 
+      : `${ASSETS_URL}${data.url}`;
     
     return {
       success: true,
