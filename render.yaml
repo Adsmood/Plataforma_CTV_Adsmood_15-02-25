@@ -1,0 +1,31 @@
+services:
+  # Servicio Frontend
+  - type: web
+    name: adsmood-ctv-frontend
+    env: static
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: NODE_VERSION
+        value: 18.19.0
+      - key: VITE_API_URL
+        sync: false # Se configurará manualmente en Render.com
+
+  # Servicio de Assets (Disco persistente)
+  - type: pserv
+    name: adsmood-ctv-assets
+    env: docker
+    disk:
+      name: assets
+      mountPath: /data
+      sizeGB: 10
+    buildCommand: docker build -t adsmood-ctv-assets .
+    startCommand: docker run -v ${VOLUME_PATH}:/data -p ${PORT}:80 adsmood-ctv-assets 
