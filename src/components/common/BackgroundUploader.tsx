@@ -29,7 +29,9 @@ const BackgroundUploader: React.FC = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      const response = await fetch(`${import.meta.env.VITE_ASSETS_URL}/upload`, {
+      // Usar el formato interno de Render para servicios privados
+      const assetsUrl = import.meta.env.VITE_ASSETS_URL.replace('https://adsmood-ctv-assets.80', 'http://adsmood-ctv-assets:80');
+      const response = await fetch(`${assetsUrl}/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -41,7 +43,7 @@ const BackgroundUploader: React.FC = () => {
       const { url } = await response.json();
       
       setBackground({
-        url: `${import.meta.env.VITE_ASSETS_URL}${url}`,
+        url: `${assetsUrl}${url}`,
         type: file.type.startsWith('video/') ? 'video' : 'image',
         style,
       });
