@@ -38,48 +38,66 @@ const BackgroundUploader: React.FC = () => {
       const assetsUrl = 'https://adsmood-ctv-assets.onrender.com';
       
       console.log('URL del servicio de assets:', assetsUrl);
+      console.log('Tipo de archivo:', file.type);
       
-      // Validar que la URL sea válida
-      try {
-        new URL(`${assetsUrl}/upload`);
-      } catch (e) {
-        console.error('URL inválida:', assetsUrl);
-        throw new Error(`URL del servicio de assets inválida. Por favor contacta al equipo de soporte.`);
-      }
-      
-      console.log('Intentando subir archivo a:', `${assetsUrl}/upload`);
-      
-      const response = await fetch(`${assetsUrl}/upload`, {
-        method: 'POST',
-        body: formData,
-        headers: {
-          'Accept': 'application/json',
-        }
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        console.error('Error de respuesta:', {
-          status: response.status,
-          statusText: response.statusText,
-          data
+      // Si es un video, primero subimos el archivo
+      if (file.type.startsWith('video/')) {
+        console.log('Subiendo video...');
+        const response = await fetch(`${assetsUrl}/upload`, {
+          method: 'POST',
+          body: formData,
         });
-        throw new Error(data.error || `Error al subir el archivo (${response.status})`);
-      }
 
-      if (!data.success || !data.url) {
-        throw new Error('La respuesta del servidor no incluye la URL del archivo');
-      }
+        if (!response.ok) {
+          throw new Error(`Error al subir el video (${response.status})`);
+        }
 
-      // Asegurarnos de que la URL del archivo sea absoluta
-      const fileUrl = data.url.startsWith('http') ? data.url : `${assetsUrl}${data.url}`;
+        const data = await response.json();
+        if (!data.success || !data.url) {
+          throw new Error('La respuesta del servidor no incluye la URL del video');
+        }
+
+        // Construir la URL absoluta del video
+        const videoUrl = `${assetsUrl}${data.url}`;
+        console.log('URL del video:', videoUrl);
+        
+        setBackground({
+          url: videoUrl,
+          type: 'video',
+          style,
+        });
+      } else {
+        // Para imágenes, mantener el comportamiento actual
+        const response = await fetch(`${assetsUrl}/upload`, {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          console.error('Error de respuesta:', {
+            status: response.status,
+            statusText: response.statusText,
+            data
+          });
+          throw new Error(data.error || `Error al subir el archivo (${response.status})`);
+        }
+
+        if (!data.success || !data.url) {
+          throw new Error('La respuesta del servidor no incluye la URL del archivo');
+        }
+
+        const fileUrl = `${assetsUrl}${data.url}`;
+        console.log('URL del archivo:', fileUrl);
+        
+        setBackground({
+          url: fileUrl,
+          type: 'image',
+          style,
+        });
+      }
       
-      setBackground({
-        url: fileUrl,
-        type: file.type.startsWith('video/') ? 'video' : 'image',
-        style,
-      });
       setOpen(false);
     } catch (error) {
       console.error('Error al procesar el fondo:', error);
