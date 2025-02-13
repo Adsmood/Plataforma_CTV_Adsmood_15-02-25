@@ -23,16 +23,29 @@ const FileUploader: React.FC<FileUploaderProps> = ({
 }) => {
   const onDropAccepted = (files: File[]) => {
     if (files.length > 0) {
-      onFileAccepted(files[0]);
+      try {
+        const file = files[0];
+        console.log('Archivo aceptado:', {
+          name: file.name,
+          type: file.type,
+          size: file.size
+        });
+        onFileAccepted(file);
+      } catch (error) {
+        console.error('Error al procesar el archivo:', error);
+      }
     }
   };
 
-  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+  const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
     onDropAccepted,
     accept,
     maxSize,
     disabled,
     multiple: false,
+    onError: (error) => {
+      console.error('Error en Dropzone:', error);
+    },
   });
 
   return (
@@ -65,7 +78,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
           align="center"
           color={error ? 'error' : 'textSecondary'}
         >
-          {title}
+          {isDragReject ? 'Archivo no permitido' : title}
         </Typography>
       </Box>
       {error && (

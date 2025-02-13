@@ -39,69 +39,95 @@ const BackgroundUploader: React.FC = () => {
       
       console.log('URL del servicio de assets:', assetsUrl);
       console.log('Tipo de archivo:', file.type);
+      console.log('Tamaño del archivo:', file.size);
       
+      // Configuración común para fetch
+      const fetchConfig = {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'Accept': 'application/json',
+          // No establecer Content-Type, dejamos que el navegador lo haga con el boundary correcto
+        },
+      };
+
       // Si es un video, primero subimos el archivo
       if (file.type.startsWith('video/')) {
         console.log('Subiendo video...');
-        const response = await fetch(`${assetsUrl}/upload`, {
-          method: 'POST',
-          body: formData,
-        });
+        try {
+          const response = await fetch(`${assetsUrl}/upload`, fetchConfig);
+          console.log('Respuesta del servidor:', response.status, response.statusText);
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            console.error('Error del servidor:', errorData);
+            throw new Error(
+              errorData?.error || 
+              `Error al subir el video (${response.status}: ${response.statusText})`
+            );
+          }
 
-        if (!response.ok) {
-          throw new Error(`Error al subir el video (${response.status})`);
-        }
+          const data = await response.json();
+          if (!data.success || !data.url) {
+            throw new Error('La respuesta del servidor no incluye la URL del video');
+          }
 
-        const data = await response.json();
-        if (!data.success || !data.url) {
-          throw new Error('La respuesta del servidor no incluye la URL del video');
-        }
-
-        // Construir la URL absoluta del video
-        const videoUrl = `${assetsUrl}${data.url}`;
-        console.log('URL del video:', videoUrl);
-        
-        setBackground({
-          url: videoUrl,
-          type: 'video',
-          style,
-        });
-      } else {
-        // Para imágenes, mantener el comportamiento actual
-        const response = await fetch(`${assetsUrl}/upload`, {
-          method: 'POST',
-          body: formData,
-        });
-
-        const data = await response.json();
-
-        if (!response.ok) {
-          console.error('Error de respuesta:', {
-            status: response.status,
-            statusText: response.statusText,
-            data
+          // Construir la URL absoluta del video
+          const videoUrl = `${assetsUrl}${data.url}`;
+          console.log('URL del video:', videoUrl);
+          
+          setBackground({
+            url: videoUrl,
+            type: 'video',
+            style,
           });
-          throw new Error(data.error || `Error al subir el archivo (${response.status})`);
+        } catch (error) {
+          console.error('Error detallado:', error);
+          throw error;
         }
+      } else {
+        // Para imágenes
+        console.log('Subiendo imagen...');
+        try {
+          const response = await fetch(`${assetsUrl}/upload`, fetchConfig);
+          console.log('Respuesta del servidor:', response.status, response.statusText);
 
-        if (!data.success || !data.url) {
-          throw new Error('La respuesta del servidor no incluye la URL del archivo');
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => null);
+            console.error('Error del servidor:', errorData);
+            throw new Error(
+              errorData?.error || 
+              `Error al subir la imagen (${response.status}: ${response.statusText})`
+            );
+          }
+
+          const data = await response.json();
+          if (!data.success || !data.url) {
+            throw new Error('La respuesta del servidor no incluye la URL del archivo');
+          }
+
+          const fileUrl = `${assetsUrl}${data.url}`;
+          console.log('URL de la imagen:', fileUrl);
+          
+          setBackground({
+            url: fileUrl,
+            type: 'image',
+            style,
+          });
+        } catch (error) {
+          console.error('Error detallado:', error);
+          throw error;
         }
-
-        const fileUrl = `${assetsUrl}${data.url}`;
-        console.log('URL del archivo:', fileUrl);
-        
-        setBackground({
-          url: fileUrl,
-          type: 'image',
-          style,
-        });
       }
       
       setOpen(false);
     } catch (error) {
       console.error('Error al procesar el fondo:', error);
-      setError(error instanceof Error ? error.message : 'Error desconocido al subir el archivo');
+      setError(
+        error instanceof Error 
+          ? error.message 
+          : 'Error desconocido al subir el archivo. Por favor, intenta de nuevo.'
+      );
     } finally {
       setUploading(false);
     }
