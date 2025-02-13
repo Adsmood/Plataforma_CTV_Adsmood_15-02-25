@@ -13,11 +13,14 @@ RUN apk add --no-cache git make \
 # Copiar configuración personalizada de Nginx
 COPY nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
 
-# Crear directorios necesarios
-RUN mkdir -p /data /data/tmp /usr/local/openresty/nginx/logs
+# Crear directorios necesarios y establecer permisos
+RUN mkdir -p /data /data/tmp /usr/local/openresty/nginx/logs \
+    && chown -R nobody:nobody /data /usr/local/openresty/nginx/logs \
+    && chmod 755 /data \
+    && chmod 700 /data/tmp
 
-# Configurar permisos
-RUN chown -R nobody:nobody /data /usr/local/openresty/nginx/logs
+# Configurar usuario nobody
+USER nobody
 
 # Exponer puerto 80
 EXPOSE 80
