@@ -13,11 +13,24 @@ RUN apk add --no-cache git make \
 # Copiar configuración personalizada de Nginx
 COPY nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
 
-# Crear directorios necesarios y establecer permisos
-RUN mkdir -p /data /data/tmp /usr/local/openresty/nginx/logs \
-    && chown -R nobody:nobody /data /usr/local/openresty/nginx/logs \
+# Crear todos los directorios necesarios como root
+RUN mkdir -p /data \
+    && mkdir -p /data/tmp \
+    && mkdir -p /usr/local/openresty/nginx/logs \
+    && mkdir -p /usr/local/openresty/nginx/proxy_temp \
+    && mkdir -p /usr/local/openresty/nginx/client_body_temp \
+    && mkdir -p /usr/local/openresty/nginx/fastcgi_temp \
+    && mkdir -p /usr/local/openresty/nginx/scgi_temp \
+    && mkdir -p /usr/local/openresty/nginx/uwsgi_temp \
     && chmod 755 /data \
-    && chmod 700 /data/tmp
+    && chmod 700 /data/tmp \
+    && chmod 700 /usr/local/openresty/nginx/proxy_temp \
+    && chmod 700 /usr/local/openresty/nginx/client_body_temp \
+    && chmod 700 /usr/local/openresty/nginx/fastcgi_temp \
+    && chmod 700 /usr/local/openresty/nginx/scgi_temp \
+    && chmod 700 /usr/local/openresty/nginx/uwsgi_temp \
+    && chown -R nobody:nobody /data \
+    && chown -R nobody:nobody /usr/local/openresty/nginx
 
 # Configurar usuario nobody
 USER nobody
