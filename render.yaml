@@ -18,6 +18,8 @@ services:
         value: 18.19.0
       - key: VITE_API_URL
         sync: false # Se configurará manualmente en Render.com
+      - key: VITE_ASSETS_URL
+        value: https://adsmood-ctv-assets.onrender.com # URL pública del servicio de assets
 
   # Servicio de Assets (Público)
   - type: web
