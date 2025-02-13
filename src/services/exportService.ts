@@ -33,10 +33,16 @@ const ensureValidUrl = (url: string): string => {
 // Obtener la URL del servicio de assets
 const getAssetsUrl = (): string => {
   const configuredUrl = import.meta.env.VITE_ASSETS_URL;
-  console.log('URL configurada:', configuredUrl);
+  console.log('URL configurada en env:', configuredUrl);
   
   if (!configuredUrl) {
     console.warn('VITE_ASSETS_URL no está configurada, usando valor por defecto');
+    return 'https://adsmood-ctv-assets.onrender.com';
+  }
+  
+  // Asegurarnos que la URL sea la correcta de Render
+  if (!configuredUrl.includes('onrender.com')) {
+    console.warn('URL no válida, usando URL por defecto de Render');
     return 'https://adsmood-ctv-assets.onrender.com';
   }
   
