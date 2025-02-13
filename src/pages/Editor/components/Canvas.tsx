@@ -38,6 +38,7 @@ const Canvas: React.FC = () => {
 
   return (
     <Box
+      id="canvas-container"
       sx={{
         width: '100%',
         height: '100%',
