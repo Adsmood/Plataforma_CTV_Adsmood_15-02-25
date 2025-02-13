@@ -103,11 +103,23 @@ export const exportVideo = async (
     }
 
     const videoBlob = await captureCanvas(canvasElement, config);
+    console.log('Video capturado:', {
+      size: videoBlob.size,
+      type: videoBlob.type
+    });
 
     // Crear FormData con los parámetros
     const formData = new FormData();
     const filename = generateExportFilename(projectName, platform, config);
     formData.append('file', videoBlob, filename);
+    console.log('FormData creado:', {
+      filename,
+      entries: Array.from(formData.entries()).map(([key, value]) => ({
+        key,
+        type: value instanceof Blob ? value.type : typeof value,
+        size: value instanceof Blob ? value.size : value.toString().length
+      }))
+    });
 
     // Subir al servicio de assets usando el endpoint /upload
     const uploadUrl = `${ASSETS_URL}/upload`;
@@ -121,20 +133,38 @@ export const exportVideo = async (
     }
 
     // Enviar al endpoint de subida
+    console.log('Iniciando subida...');
     const response = await fetch(uploadUrl, {
       method: 'POST',
       body: formData,
     });
+    console.log('Respuesta recibida:', {
+      status: response.status,
+      statusText: response.statusText,
+      headers: Object.fromEntries(response.headers.entries())
+    });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => null);
-      throw new Error(
-        errorData?.error || 
-        `Error al subir video (${response.status}: ${response.statusText})`
-      );
+      const errorText = await response.text();
+      console.error('Error en respuesta:', {
+        status: response.status,
+        statusText: response.statusText,
+        body: errorText
+      });
+      
+      let errorMessage;
+      try {
+        const errorData = JSON.parse(errorText);
+        errorMessage = errorData.error || `Error al subir video (${response.status}: ${response.statusText})`;
+      } catch {
+        errorMessage = `Error al subir video (${response.status}: ${response.statusText}) - ${errorText}`;
+      }
+      
+      throw new Error(errorMessage);
     }
 
     const data = await response.json();
+    console.log('Datos de respuesta:', data);
     
     if (!data.success || !data.url) {
       throw new Error('La respuesta del servidor no incluye la URL del video');
