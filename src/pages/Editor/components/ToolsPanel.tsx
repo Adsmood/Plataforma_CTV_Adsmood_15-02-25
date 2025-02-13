@@ -7,17 +7,15 @@ import {
   QrCode as QrIcon,
   List as ChoiceIcon,
   Collections as GalleryIcon,
-  Download as ExportIcon,
+  Upload as UploadIcon,
   VideoCall as VideoIcon,
   Image as ImageIcon,
   TextFields as TextIcon,
-  Upload as UploadIcon
 } from '@mui/icons-material';
 import { useEditorStore } from '../../../stores/editorStore';
 import useProjectStore from '../../../stores/projectStore';
 import type { ElementType } from '../../../stores/editorStore';
 import VideoUploader from '../../../components/common/VideoUploader';
-import { generateVastXml, downloadVastXml } from '../../../services/vastExporter';
 import { ExportDialog } from '../../../components/export/ExportDialog';
 
 const tools: { type: Exclude<ElementType, 'video'>; icon: React.ComponentType; tooltip: string }[] = [
@@ -84,54 +82,10 @@ const defaultContent = {
 
 const ToolsPanel: React.FC = () => {
   const addElement = useEditorStore((state) => state.addElement);
-  const editorState = useEditorStore((state) => ({
-    elements: state.elements,
-    background: state.background,
-    timeline: state.timeline
-  }));
-  const currentProject = useProjectStore((state) => state.currentProject);
   const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
   const handleAddElement = (type: Exclude<ElementType, 'video'>) => {
     addElement(type, defaultContent[type]);
-  };
-
-  const handleExportVast = () => {
-    if (!currentProject) {
-      alert('Por favor, guarda el proyecto antes de exportar el VAST');
-      return;
-    }
-
-    const options = {
-      baseUrl: window.location.origin,
-      impressionUrl: `${window.location.origin}/track/impression`,
-      clickTrackingUrl: `${window.location.origin}/track/click`,
-      startTrackingUrl: `${window.location.origin}/track/start`,
-      completeTrackingUrl: `${window.location.origin}/track/complete`,
-      skipTrackingUrl: `${window.location.origin}/track/skip`,
-      interactionTrackingUrl: `${window.location.origin}/track/interaction`,
-      viewableImpressionUrl: `${window.location.origin}/track/viewable`,
-      quartileTrackingUrls: {
-        firstQuartile: `${window.location.origin}/track/firstQuartile`,
-        midpoint: `${window.location.origin}/track/midpoint`,
-        thirdQuartile: `${window.location.origin}/track/thirdQuartile`,
-      },
-      videoFormats: [
-        {
-          url: editorState.background?.url || '',
-          codec: 'H.264' as const,
-          bitrate: 2000,
-          width: 1920,
-          height: 1080,
-          delivery: 'progressive' as const
-        }
-      ],
-      fallbackVideoUrl: editorState.background?.url || '',
-      platform: 'roku' as const
-    };
-
-    const vastXml = generateVastXml(editorState, options);
-    downloadVastXml(vastXml, currentProject.name);
   };
 
   return (
@@ -152,22 +106,6 @@ const ToolsPanel: React.FC = () => {
           </Tooltip>
         ))}
         <Divider sx={{ my: 1 }} />
-        <Tooltip title="Exportar VAST" placement="right">
-          <IconButton
-            onClick={handleExportVast}
-            sx={{
-              width: '44px',
-              height: '44px',
-              backgroundColor: 'primary.main',
-              color: 'white',
-              '&:hover': {
-                backgroundColor: 'primary.dark',
-              },
-            }}
-          >
-            <ExportIcon />
-          </IconButton>
-        </Tooltip>
         <Tooltip title="Exportar" placement="right">
           <IconButton onClick={() => setExportDialogOpen(true)}>
             <UploadIcon />
