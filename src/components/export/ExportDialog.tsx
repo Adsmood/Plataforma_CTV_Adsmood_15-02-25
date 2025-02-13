@@ -19,7 +19,7 @@ import {
 } from '@mui/material';
 import { Platform, ExportConfig, PLATFORM_CONFIGS } from '../../types/export';
 import { exportVideo } from '../../services/exportService';
-import { generateVastXml, downloadVastXml } from '../../services/vastExporter';
+import { generateVastXml, validateVastXml } from '../../services/vastExporter';
 import useProjectStore from '../../stores/projectStore';
 import { useEditorStore } from '../../stores/editorStore';
 
@@ -34,6 +34,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose }) => 
   const [error, setError] = useState<string | null>(null);
   const [exportedVideos, setExportedVideos] = useState<{ [key: string]: string }>({});
   const [generateVast, setGenerateVast] = useState(true);
+  const [vastXml, setVastXml] = useState<string | null>(null);
   
   const currentProject = useProjectStore((state) => state.currentProject);
   const editorState = useEditorStore();
@@ -47,6 +48,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose }) => 
     setIsExporting(true);
     setError(null);
     setExportedVideos({});
+    setVastXml(null);
 
     try {
       const exportedUrls: { [key: string]: string } = {};
@@ -68,35 +70,49 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose }) => 
 
       setExportedVideos(exportedUrls);
 
-      // Generar y descargar VAST si está habilitado
+      // Generar VAST si está habilitado
       if (generateVast) {
         const vastOptions = {
-          baseUrl: window.location.origin,
-          impressionUrl: `${window.location.origin}/track/impression`,
-          clickTrackingUrl: `${window.location.origin}/track/click`,
-          startTrackingUrl: `${window.location.origin}/track/start`,
-          completeTrackingUrl: `${window.location.origin}/track/complete`,
-          skipTrackingUrl: `${window.location.origin}/track/skip`,
-          interactionTrackingUrl: `${window.location.origin}/track/interaction`,
-          viewableImpressionUrl: `${window.location.origin}/track/viewable`,
+          baseUrl: import.meta.env.VITE_API_URL || 'https://adsmood-ctv-api.onrender.com',
+          impressionUrl: `${import.meta.env.VITE_API_URL}/track/impression`,
+          clickTrackingUrl: `${import.meta.env.VITE_API_URL}/track/click`,
+          startTrackingUrl: `${import.meta.env.VITE_API_URL}/track/start`,
+          completeTrackingUrl: `${import.meta.env.VITE_API_URL}/track/complete`,
+          skipTrackingUrl: `${import.meta.env.VITE_API_URL}/track/skip`,
+          interactionTrackingUrl: `${import.meta.env.VITE_API_URL}/track/interaction`,
+          viewableImpressionUrl: `${import.meta.env.VITE_API_URL}/track/viewable`,
           quartileTrackingUrls: {
-            firstQuartile: `${window.location.origin}/track/firstQuartile`,
-            midpoint: `${window.location.origin}/track/midpoint`,
-            thirdQuartile: `${window.location.origin}/track/thirdQuartile`,
+            firstQuartile: `${import.meta.env.VITE_API_URL}/track/firstQuartile`,
+            midpoint: `${import.meta.env.VITE_API_URL}/track/midpoint`,
+            thirdQuartile: `${import.meta.env.VITE_API_URL}/track/thirdQuartile`,
           },
           videoFormats: [],
-          fallbackVideoUrl: '',
+          fallbackVideoUrl: exportedUrls[selectedPlatforms[0]] || '',
         };
 
         // Si solo se exportó para una plataforma, generar VAST específico
         if (selectedPlatforms.length === 1) {
           const platform = selectedPlatforms[0];
-          const vastXml = generateVastXml(editorState, vastOptions, exportedUrls);
-          downloadVastXml(vastXml, currentProject.name, platform);
+          const xml = generateVastXml(editorState, vastOptions, { [platform]: exportedUrls[platform] });
+          const validation = validateVastXml(xml);
+          
+          if (!validation.isValid) {
+            console.error('Errores en el VAST XML:', validation.errors);
+            throw new Error('Error al generar el VAST XML: ' + validation.errors.join(', '));
+          }
+          
+          setVastXml(xml);
         } else {
           // Generar VAST con todos los formatos
-          const vastXml = generateVastXml(editorState, vastOptions, exportedUrls);
-          downloadVastXml(vastXml, currentProject.name);
+          const xml = generateVastXml(editorState, vastOptions, exportedUrls);
+          const validation = validateVastXml(xml);
+          
+          if (!validation.isValid) {
+            console.error('Errores en el VAST XML:', validation.errors);
+            throw new Error('Error al generar el VAST XML: ' + validation.errors.join(', '));
+          }
+          
+          setVastXml(xml);
         }
       }
     } catch (error) {
@@ -125,6 +141,13 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({ open, onClose }) => 
           {Object.keys(exportedVideos).length > 0 && (
             <Alert severity="success" sx={{ mb: 2 }}>
               Videos exportados exitosamente
+              {vastXml && (
+                <Typography variant="body2" sx={{ mt: 1 }}>
+                  VAST XML generado correctamente. Usa la siguiente URL en DV360:
+                  <br />
+                  <code>{`${import.meta.env.VITE_API_URL}/vast/${currentProject?.id}`}</code>
+                </Typography>
+              )}
             </Alert>
           )}
 

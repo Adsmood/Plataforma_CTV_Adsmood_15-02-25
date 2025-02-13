@@ -108,22 +108,20 @@ export const exportVideo = async (
     const formData = new FormData();
     const filename = generateExportFilename(projectName, platform, config);
     formData.append('file', videoBlob, filename);
-    formData.append('platform', platform);
-    formData.append('config', JSON.stringify(config));
 
-    // Construir URL del endpoint
-    const exportUrl = `${ASSETS_URL}/export`;
-    console.log('URL de exportación:', exportUrl);
+    // Subir al servicio de assets usando el endpoint /upload
+    const uploadUrl = `${ASSETS_URL}/upload`;
+    console.log('URL de subida:', uploadUrl);
 
     // Validar URL antes de hacer el fetch
     try {
-      new URL(exportUrl);
+      new URL(uploadUrl);
     } catch (error) {
-      throw new Error(`URL de exportación inválida: ${exportUrl}`);
+      throw new Error(`URL de subida inválida: ${uploadUrl}`);
     }
 
-    // Enviar al endpoint de exportación
-    const response = await fetch(exportUrl, {
+    // Enviar al endpoint de subida
+    const response = await fetch(uploadUrl, {
       method: 'POST',
       body: formData,
     });
@@ -132,7 +130,7 @@ export const exportVideo = async (
       const errorData = await response.json().catch(() => null);
       throw new Error(
         errorData?.error || 
-        `Error al exportar video (${response.status}: ${response.statusText})`
+        `Error al subir video (${response.status}: ${response.statusText})`
       );
     }
 
@@ -153,7 +151,7 @@ export const exportVideo = async (
       success: true,
       url: videoUrl,
       filename: data.url.split('/').pop() || filename,
-      config: data.config || config,
+      config: config,
       platform,
       timestamp: Date.now()
     };

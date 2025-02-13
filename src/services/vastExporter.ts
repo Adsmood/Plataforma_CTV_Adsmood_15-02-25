@@ -96,7 +96,7 @@ const generateInteractiveWrapper = (
     },
     fallback: {
       enabled: true,
-      videoUrl: `${vastOptions.baseUrl}${vastOptions.fallbackVideoUrl}`
+      videoUrl: vastOptions.fallbackVideoUrl
     }
   };
 };
@@ -176,10 +176,7 @@ export const generateVastXml = (
 
   const interactiveCreativeData = generateInteractiveWrapper(
     interactiveElements,
-    background ? {
-      ...background,
-      url: `${options.baseUrl}${background.url}`
-    } : null,
+    background,
     timeline,
     options,
     options.platform
@@ -230,7 +227,7 @@ export const generateVastXml = (
               </MediaFile>
               `).join('')}
               <MediaFile delivery="progressive" type="video/mp4" width="1920" height="1080" maintainAspectRatio="true">
-                <![CDATA[${options.baseUrl}${options.fallbackVideoUrl}]]>
+                <![CDATA[${options.fallbackVideoUrl}]]>
               </MediaFile>
             </MediaFiles>
             <AdParameters><![CDATA[${JSON.stringify(interactiveCreativeData)}]]></AdParameters>
@@ -287,19 +284,19 @@ export const validateVastXml = (xml: string): { isValid: boolean; errors: string
       }
     });
     
-    // Validate Interactive Creative File
-    const interactiveCreative = doc.getElementsByTagName('InteractiveCreativeFile')[0];
+    // Validate Interactive Creative Data
+    const interactiveCreative = doc.getElementsByTagName('InteractiveCreativeData')[0];
     if (interactiveCreative) {
       try {
         const content = JSON.parse(interactiveCreative.textContent || '');
         if (!content.version || !content.type || !content.elements) {
-          errors.push('Invalid Interactive Creative File structure');
+          errors.push('Invalid Interactive Creative Data structure');
         }
       } catch (e) {
-        errors.push('Invalid JSON in Interactive Creative File');
+        errors.push('Invalid JSON in Interactive Creative Data');
       }
     } else {
-      errors.push('Missing Interactive Creative File');
+      errors.push('Missing Interactive Creative Data');
     }
     
     return {
