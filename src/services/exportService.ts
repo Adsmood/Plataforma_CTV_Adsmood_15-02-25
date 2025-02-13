@@ -19,12 +19,33 @@ const ensureValidUrl = (url: string): string => {
   // Remover barra final si existe
   url = url.replace(/\/$/, '');
   
+  // Validar formato de URL
+  try {
+    new URL(url);
+  } catch (error) {
+    console.error('URL inválida:', url);
+    throw new Error(`URL inválida: ${url}`);
+  }
+  
   return url;
 };
 
-const ASSETS_URL = ensureValidUrl(import.meta.env.VITE_ASSETS_URL || 'adsmood-ctv-assets.onrender.com');
+// Obtener la URL del servicio de assets
+const getAssetsUrl = (): string => {
+  const configuredUrl = import.meta.env.VITE_ASSETS_URL;
+  console.log('URL configurada:', configuredUrl);
+  
+  if (!configuredUrl) {
+    console.warn('VITE_ASSETS_URL no está configurada, usando valor por defecto');
+    return 'https://adsmood-ctv-assets.onrender.com';
+  }
+  
+  return ensureValidUrl(configuredUrl);
+};
 
-console.log('URL del servicio de assets:', ASSETS_URL);
+const ASSETS_URL = getAssetsUrl();
+
+console.log('URL final del servicio de assets:', ASSETS_URL);
 
 export const DEFAULT_EXPORT_CONFIG: ExportConfig = {
   resolution: '1080p',
@@ -88,6 +109,13 @@ export const exportVideo = async (
     const exportUrl = `${ASSETS_URL}/export`;
     console.log('URL de exportación:', exportUrl);
 
+    // Validar URL antes de hacer el fetch
+    try {
+      new URL(exportUrl);
+    } catch (error) {
+      throw new Error(`URL de exportación inválida: ${exportUrl}`);
+    }
+
     // Enviar al endpoint de exportación
     const response = await fetch(exportUrl, {
       method: 'POST',
@@ -109,9 +137,11 @@ export const exportVideo = async (
     }
 
     // Construir URL completa del video
-    const videoUrl = data.url.startsWith('http') 
-      ? data.url 
-      : `${ASSETS_URL}${data.url}`;
+    const videoUrl = new URL(
+      data.url.startsWith('http') ? data.url : `${ASSETS_URL}${data.url}`
+    ).toString();
+    
+    console.log('URL del video exportado:', videoUrl);
     
     return {
       success: true,
