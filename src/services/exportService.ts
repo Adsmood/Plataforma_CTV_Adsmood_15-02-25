@@ -1,7 +1,13 @@
 import { Platform, ExportConfig, ExportResult } from '../types/export';
 import { captureCanvas } from './canvasService';
 
-const ASSETS_URL = import.meta.env.VITE_ASSETS_URL;
+const ASSETS_URL = import.meta.env.VITE_ASSETS_URL || 'https://adsmood-ctv-assets.onrender.com';
+
+if (!ASSETS_URL) {
+  console.error('VITE_ASSETS_URL no está definida');
+}
+
+console.log('URL del servicio de assets:', ASSETS_URL);
 
 export const DEFAULT_EXPORT_CONFIG: ExportConfig = {
   resolution: '1080p',
@@ -42,7 +48,8 @@ export const exportVideo = async (
     console.log('Iniciando exportación:', {
       projectName,
       platform,
-      config
+      config,
+      assetsUrl: ASSETS_URL
     });
 
     // Capturar el canvas
@@ -55,8 +62,12 @@ export const exportVideo = async (
     formData.append('platform', platform);
     formData.append('config', JSON.stringify(config));
 
+    // Construir URL del endpoint
+    const exportUrl = new URL('/export', ASSETS_URL).toString();
+    console.log('URL de exportación:', exportUrl);
+
     // Enviar al endpoint de exportación
-    const response = await fetch(`${ASSETS_URL}/export`, {
+    const response = await fetch(exportUrl, {
       method: 'POST',
       body: formData,
     });
@@ -70,10 +81,11 @@ export const exportVideo = async (
     }
 
     const data = await response.json();
+    const videoUrl = new URL(data.url, ASSETS_URL).toString();
     
     return {
       success: true,
-      url: `${ASSETS_URL}${data.url}`,
+      url: videoUrl,
       filename: data.url.split('/').pop() || '',
       config: data.config,
       platform,
