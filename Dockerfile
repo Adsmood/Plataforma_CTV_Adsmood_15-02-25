@@ -1,14 +1,14 @@
 FROM openresty/openresty:alpine
 
 # Instalar lua-resty-upload
-RUN apk add --no-cache git \
+RUN apk add --no-cache git make \
     && cd /tmp \
     && git clone https://github.com/openresty/lua-resty-upload.git \
     && cd lua-resty-upload \
     && make install \
     && cd / \
     && rm -rf /tmp/lua-resty-upload \
-    && apk del git
+    && apk del git make
 
 # Copiar configuración personalizada de Nginx
 COPY nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
