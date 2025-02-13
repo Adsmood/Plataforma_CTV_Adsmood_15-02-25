@@ -1,11 +1,24 @@
 import { Platform, ExportConfig, ExportResult } from '../types/export';
 import { captureCanvas } from './canvasService';
 
-// Asegurarnos de que la URL tenga el protocolo correcto
+// Asegurarnos de que la URL tenga el protocolo correcto y termine correctamente
 const ensureValidUrl = (url: string): string => {
-  if (!url.startsWith('http://') && !url.startsWith('https://')) {
-    return `https://${url}`;
+  if (!url) {
+    console.error('URL del servicio de assets no configurada');
+    throw new Error('URL del servicio de assets no configurada');
   }
+  
+  // Limpiar la URL
+  url = url.trim();
+  
+  // Asegurar protocolo
+  if (!url.startsWith('http://') && !url.startsWith('https://')) {
+    url = `https://${url}`;
+  }
+  
+  // Remover barra final si existe
+  url = url.replace(/\/$/, '');
+  
   return url;
 };
 
@@ -58,11 +71,16 @@ export const exportVideo = async (
 
     // Capturar el canvas
     const canvasElement = document.querySelector('#canvas-container') as HTMLElement;
+    if (!canvasElement) {
+      throw new Error('Canvas no encontrado');
+    }
+
     const videoBlob = await captureCanvas(canvasElement, config);
 
     // Crear FormData con los parámetros
     const formData = new FormData();
-    formData.append('file', videoBlob, projectName + '.mp4');
+    const filename = generateExportFilename(projectName, platform, config);
+    formData.append('file', videoBlob, filename);
     formData.append('platform', platform);
     formData.append('config', JSON.stringify(config));
 
@@ -86,6 +104,10 @@ export const exportVideo = async (
 
     const data = await response.json();
     
+    if (!data.success || !data.url) {
+      throw new Error('La respuesta del servidor no incluye la URL del video');
+    }
+
     // Construir URL completa del video
     const videoUrl = data.url.startsWith('http') 
       ? data.url 
@@ -94,8 +116,8 @@ export const exportVideo = async (
     return {
       success: true,
       url: videoUrl,
-      filename: data.url.split('/').pop() || '',
-      config: data.config,
+      filename: data.url.split('/').pop() || filename,
+      config: data.config || config,
       platform,
       timestamp: Date.now()
     };

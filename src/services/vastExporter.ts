@@ -1,4 +1,5 @@
 import type { EditorState, Element, ElementType } from '../stores/editorStore';
+import { Platform, ExportConfig, PLATFORM_CONFIGS } from '../types/export';
 
 interface VideoFormat {
   url: string;
@@ -7,6 +8,7 @@ interface VideoFormat {
   width: number;
   height: number;
   delivery: 'progressive' | 'streaming';
+  platform?: Platform;
 }
 
 interface VastOptions {
@@ -26,7 +28,7 @@ interface VastOptions {
   };
   videoFormats: VideoFormat[];
   fallbackVideoUrl: string;
-  platform?: 'roku' | 'fireTV' | 'appleTV' | 'androidTV' | 'other';
+  platform?: Platform;
 }
 
 interface InteractiveElement {
@@ -99,9 +101,29 @@ const generateInteractiveWrapper = (
   };
 };
 
-export const generateVastXml = (state: Pick<EditorState, 'elements' | 'background' | 'timeline'>, options: VastOptions): string => {
+export const generateVastXml = (
+  state: Pick<EditorState, 'elements' | 'background' | 'timeline'>, 
+  options: VastOptions,
+  exportedVideos?: { [key: string]: string }
+): string => {
   const { elements, background, timeline } = state;
   
+  // Si se proporcionan videos exportados, actualizar los formatos
+  if (exportedVideos) {
+    options.videoFormats = Object.entries(exportedVideos).map(([platform, url]) => {
+      const config = PLATFORM_CONFIGS[platform as Platform];
+      return {
+        url,
+        codec: config.videoCodec === 'h264' ? 'H.264' : 'H.265',
+        bitrate: 15000, // 15 Mbps por defecto
+        width: config.resolution === '4k' ? 3840 : 1920,
+        height: config.resolution === '4k' ? 2160 : 1080,
+        delivery: 'progressive',
+        platform: platform as Platform
+      };
+    });
+  }
+
   // Transform elements to include tracking and CTV-specific properties
   const interactiveElements = elements.map((el: Element): InteractiveElement => ({
     ...el,
@@ -202,8 +224,9 @@ export const generateVastXml = (state: Pick<EditorState, 'elements' | 'backgroun
                 height="${format.height}" 
                 bitrate="${format.bitrate}"
                 codec="${format.codec}"
-                maintainAspectRatio="true">
-                <![CDATA[${options.baseUrl}${format.url}]]>
+                maintainAspectRatio="true"
+                ${format.platform ? `platform="${format.platform}"` : ''}>
+                <![CDATA[${format.url}]]>
               </MediaFile>
               `).join('')}
               <MediaFile delivery="progressive" type="video/mp4" width="1920" height="1080" maintainAspectRatio="true">
@@ -292,12 +315,22 @@ export const validateVastXml = (xml: string): { isValid: boolean; errors: string
   }
 };
 
-export const downloadVastXml = (xml: string, projectName: string = 'ad'): void => {
-  const blob = new Blob([xml], { type: 'application/xml' });
+export const downloadVastXml = (
+  vastXml: string, 
+  projectName: string,
+  platform?: Platform
+): void => {
+  const timestamp = Date.now();
+  const sanitizedName = projectName.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  const filename = platform 
+    ? `adsmood-vast-${sanitizedName}-${platform}-${timestamp}.xml`
+    : `adsmood-vast-${sanitizedName}-${timestamp}.xml`;
+
+  const blob = new Blob([vastXml], { type: 'application/xml' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `adsmood-vast-${projectName}-${Date.now()}.xml`;
+  a.download = filename;
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
