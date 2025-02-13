@@ -1,16 +1,16 @@
-FROM nginx:alpine
+FROM openresty/openresty:alpine
 
 # Copiar configuración personalizada de Nginx
-COPY nginx.conf /etc/nginx/nginx.conf
+COPY nginx.conf /usr/local/openresty/nginx/conf/nginx.conf
 
-# Crear directorio para los assets
-RUN mkdir -p /data
+# Crear directorios necesarios
+RUN mkdir -p /data /data/tmp
 
 # Configurar permisos
-RUN chown -R nginx:nginx /data
+RUN chown -R nobody:nobody /data
 
 # Exponer puerto 80
 EXPOSE 80
 
-# Comando para iniciar Nginx
-CMD ["nginx", "-g", "daemon off;"] 
+# Comando para iniciar OpenResty
+CMD ["/usr/local/openresty/bin/openresty", "-g", "daemon off;"] 

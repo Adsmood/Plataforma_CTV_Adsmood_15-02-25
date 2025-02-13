@@ -26,9 +26,22 @@ const BackgroundUploader: React.FC = () => {
 
   const handleFileAccepted = async (file: File) => {
     try {
-      const url = URL.createObjectURL(file);
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const response = await fetch(`${import.meta.env.VITE_ASSETS_URL}/upload`, {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error('Error al subir el archivo');
+      }
+
+      const { url } = await response.json();
+      
       setBackground({
-        url,
+        url: `${import.meta.env.VITE_ASSETS_URL}${url}`,
         type: file.type.startsWith('video/') ? 'video' : 'image',
         style,
       });
