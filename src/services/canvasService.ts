@@ -1,4 +1,5 @@
 import { ExportConfig } from '../types/export';
+import { useEditorStore } from '../stores/editorStore';
 
 export const captureCanvas = async (
   canvasElement: HTMLElement | null,
@@ -17,6 +18,10 @@ export const captureCanvas = async (
       config
     });
 
+    // Obtener la duración del timeline
+    const timeline = useEditorStore.getState().timeline;
+    const duration = timeline?.duration || 30; // Fallback a 30 segundos
+
     // Capturar el canvas
     const canvas = await html2canvas(canvasElement, {
       width: config.resolution === '4k' ? 3840 : 1920,
@@ -33,10 +38,17 @@ export const captureCanvas = async (
       }
     });
 
-    // Convertir a video usando MediaRecorder
+    // Configurar el MediaRecorder con las opciones adecuadas
     const stream = canvas.captureStream(config.fps);
+    
+    // Intentar obtener el codec solicitado
+    let mimeType = 'video/webm;codecs=h264';
+    if (config.videoCodec === 'h265' && MediaRecorder.isTypeSupported('video/webm;codecs=h265')) {
+      mimeType = 'video/webm;codecs=h265';
+    }
+
     const mediaRecorder = new MediaRecorder(stream, {
-      mimeType: 'video/webm;codecs=h264',
+      mimeType,
       videoBitsPerSecond: parseInt(config.bitrate) * 1000
     });
 
@@ -49,14 +61,19 @@ export const captureCanvas = async (
         }
       };
 
+      mediaRecorder.onerror = (error: ErrorEvent) => {
+        reject(new Error(`Error en MediaRecorder: ${error.message}`));
+      };
+
       mediaRecorder.onstop = async () => {
         try {
-          const blob = new Blob(chunks, { type: 'video/webm' });
+          const blob = new Blob(chunks, { type: mimeType });
           
           // Convertir a MP4 si es necesario
           if (config.format === 'mp4') {
-            // TODO: Implementar conversión a MP4
+            // TODO: Implementar conversión a MP4 usando WebAssembly FFmpeg
             // Por ahora retornamos el webm
+            console.warn('Conversión a MP4 no implementada, retornando WebM');
             resolve(blob);
           } else {
             resolve(blob);
@@ -69,10 +86,12 @@ export const captureCanvas = async (
       // Iniciar grabación
       mediaRecorder.start();
       
-      // Grabar por la duración del video
+      // Grabar por la duración del timeline
       setTimeout(() => {
-        mediaRecorder.stop();
-      }, 30000); // 30 segundos por defecto
+        if (mediaRecorder.state === 'recording') {
+          mediaRecorder.stop();
+        }
+      }, duration * 1000);
     });
   } catch (error) {
     console.error('Error capturando canvas:', error);
