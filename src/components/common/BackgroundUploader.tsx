@@ -30,26 +30,37 @@ const BackgroundUploader: React.FC = () => {
       formData.append('file', file);
 
       // Usar el formato interno de Render para servicios privados
-      const assetsUrl = import.meta.env.VITE_ASSETS_URL.replace('https://adsmood-ctv-assets.80', 'http://adsmood-ctv-assets:80');
+      const assetsUrl = import.meta.env.VITE_ASSETS_URL.replace('.80', ':80');
+      
+      console.log('Intentando subir archivo a:', `${assetsUrl}/upload`);
+      
       const response = await fetch(`${assetsUrl}/upload`, {
         method: 'POST',
         body: formData,
       });
 
       if (!response.ok) {
-        throw new Error('Error al subir el archivo');
+        const errorText = await response.text();
+        throw new Error(`Error al subir el archivo: ${errorText}`);
       }
 
-      const { url } = await response.json();
+      const data = await response.json();
+      
+      if (!data.url) {
+        throw new Error('La respuesta del servidor no incluye la URL del archivo');
+      }
+
+      console.log('Archivo subido exitosamente:', data);
       
       setBackground({
-        url: `${assetsUrl}${url}`,
+        url: `${assetsUrl}${data.url}`,
         type: file.type.startsWith('video/') ? 'video' : 'image',
         style,
       });
       setOpen(false);
     } catch (error) {
       console.error('Error al procesar el fondo:', error);
+      // Aquí podrías mostrar un mensaje de error al usuario
     }
   };
 
