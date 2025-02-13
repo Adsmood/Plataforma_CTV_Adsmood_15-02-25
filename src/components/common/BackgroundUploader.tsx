@@ -34,14 +34,17 @@ const BackgroundUploader: React.FC = () => {
       const formData = new FormData();
       formData.append('file', file);
 
-      // Validar y formatear la URL del servicio de assets
-      const assetsUrl = import.meta.env.VITE_ASSETS_URL?.replace(/\/$/, '') || 'https://adsmood-ctv-assets.onrender.com';
+      // Usar la URL pública del servicio de assets
+      const assetsUrl = 'https://adsmood-ctv-assets.onrender.com';
+      
+      console.log('URL del servicio de assets:', assetsUrl);
       
       // Validar que la URL sea válida
       try {
         new URL(`${assetsUrl}/upload`);
       } catch (e) {
-        throw new Error(`URL del servicio de assets inválida: ${assetsUrl}`);
+        console.error('URL inválida:', assetsUrl);
+        throw new Error(`URL del servicio de assets inválida. Por favor contacta al equipo de soporte.`);
       }
       
       console.log('Intentando subir archivo a:', `${assetsUrl}/upload`);
