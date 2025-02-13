@@ -19,8 +19,8 @@ services:
       - key: VITE_API_URL
         sync: false # Se configurará manualmente en Render.com
 
-  # Servicio de Assets (Disco persistente)
-  - type: pserv
+  # Servicio de Assets (Público)
+  - type: web
     name: adsmood-ctv-assets
     env: docker
     disk:
