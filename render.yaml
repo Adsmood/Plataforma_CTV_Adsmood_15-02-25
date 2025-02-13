@@ -61,4 +61,30 @@ services:
     healthCheckPath: /
     envVars:
       - key: NODE_ENV
-        value: production 
+        value: production
+
+  # Servicio de API
+  - type: web
+    name: adsmood-ctv-api
+    env: node
+    plan: starter
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: npm run start:prod
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 3000
+      - key: DATABASE_URL
+        fromDatabase:
+          name: adsmood-ctv-db
+          property: connectionString
+      - key: API_URL
+        value: https://adsmood-ctv-api.onrender.com
+      - key: ASSETS_URL
+        value: https://adsmood-ctv-assets.onrender.com
+
+databases:
+  - name: adsmood-ctv-db
+    plan: starter 
