@@ -1,5 +1,5 @@
 import React from 'react';
-import { Box, IconButton, Stack, Slider } from '@mui/material';
+import { Box, Stack, Slider } from '@mui/material';
 import { ZoomIn, CropFree } from '@mui/icons-material';
 import { useEditorStore } from '../../../../stores/editorStore';
 

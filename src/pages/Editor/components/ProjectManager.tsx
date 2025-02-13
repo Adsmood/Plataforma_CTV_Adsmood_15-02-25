@@ -35,8 +35,8 @@ const ProjectManager: React.FC = () => {
   const { projects, currentProject, saveProject, loadProject, deleteProject, closeProject } = useProjectStore();
   const { elements } = useEditorStore();
   const [isSaving, setIsSaving] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSave = async () => {
     if (!projectName.trim()) {
@@ -67,7 +67,6 @@ const ProjectManager: React.FC = () => {
     if (!id) return;
     
     try {
-      setIsLoading(true);
       if (currentProject && elements.length > 0) {
         setCloseDialogOpen(true);
         return;
@@ -76,8 +75,6 @@ const ProjectManager: React.FC = () => {
       setOpen(false);
     } catch (error) {
       console.error('Error al cargar:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 

@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Box, Dialog, IconButton, Slider, Stack } from '@mui/material';
+import { Box, Stack, IconButton, Slider, Dialog } from '@mui/material';
 import { Add as AddIcon, ZoomIn, CropFree } from '@mui/icons-material';
-import FileUploader from './FileUploader';
 import { useEditorStore } from '../../stores/editorStore';
+import FileUploader from './FileUploader';
 
 interface Background {
   url: string;
