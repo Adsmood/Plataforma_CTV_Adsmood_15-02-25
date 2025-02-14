@@ -1,20 +1,17 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import { VastModule } from './modules/vast/vast.module';
-import { TrackingModule } from './modules/tracking/tracking.module';
+import { PrismaModule } from './prisma/prisma.module';
 import { InteractiveModule } from './modules/interactive/interactive.module';
-import { PrismaModule } from './modules/prisma/prisma.module';
+import { TrackingModule } from './modules/tracking/tracking.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      envFilePath: '.env',
     }),
     PrismaModule,
-    VastModule,
-    TrackingModule,
     InteractiveModule,
+    TrackingModule,
   ],
 })
 export class AppModule {}

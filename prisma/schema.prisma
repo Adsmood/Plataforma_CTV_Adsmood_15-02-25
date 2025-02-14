@@ -18,6 +18,8 @@ model Ad {
   trackingEvents  TrackingEvent[]
   metrics         AdMetrics?
   interactiveData Json?
+  interactions    Interaction[]
+  overlays        Overlay[]
 
   @@index([createdAt])
   @@map("ads")
@@ -83,4 +85,44 @@ model AdMetrics {
 
   @@index([createdAt])
   @@map("ad_metrics")
+}
+
+model Interaction {
+  id          String   @id @default(cuid())
+  adId        String
+  type        String   // button, carousel, gallery, trivia, qr, choice
+  config      Json     // Configuración específica del tipo de interacción
+  position    Json     // { x: number, y: number }
+  size        Json     // { width: number, height: number }
+  startTime   Float    // Tiempo en segundos cuando aparece
+  endTime     Float?   // Tiempo en segundos cuando desaparece (opcional)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  ad          Ad       @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+  @@index([adId])
+  @@index([type])
+  @@map("interactions")
+}
+
+model Overlay {
+  id          String   @id @default(cuid())
+  adId        String
+  type        String   // html, image, video
+  content     String   // URL del contenido o HTML
+  position    Json     // { x: number, y: number }
+  size        Json     // { width: number, height: number }
+  startTime   Float    // Tiempo en segundos cuando aparece
+  endTime     Float?   // Tiempo en segundos cuando desaparece (opcional)
+  zIndex      Int      @default(0)
+  styles      Json?    // Estilos CSS adicionales
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  ad          Ad       @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+  @@index([adId])
+  @@index([type])
+  @@map("overlays")
 } 
