@@ -1,33 +1,56 @@
 services:
-  # Servicio Frontend
+  # Frontend - Editor CTV
   - type: web
-    name: adsmood-ctv-frontend
+    name: ctv-render-13-02
     env: static
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
-    headers:
-      - path: /*
-        name: Cache-Control
-        value: no-cache
-    routes:
-      - type: rewrite
-        source: /*
-        destination: /index.html
+    pullRequestPreviewsEnabled: true
     envVars:
-      - key: NODE_VERSION
-        value: 18.19.0
-      - key: VITE_API_URL
-        sync: false # Se configurará manualmente en Render.com
       - key: VITE_ASSETS_URL
-        value: https://adsmood-ctv-assets.onrender.com # URL pública del servicio de assets
+        value: https://adsmood-ctv-assets.onrender.com
+      - key: VITE_API_URL
+        value: https://adsmood-ctv-api.onrender.com
 
-  # Servicio de Assets (Público)
+  # Servicio de Assets
   - type: web
     name: adsmood-ctv-assets
-    env: docker
-    disk:
-      name: assets
-      mountPath: /data
-      sizeGB: 10
-    buildCommand: docker build -t adsmood-ctv-assets .
-    startCommand: docker run -v ${VOLUME_PATH}:/data -p ${PORT}:80 adsmood-ctv-assets 
+    env: node
+    buildCommand: npm install
+    startCommand: node server.js
+    pullRequestPreviewsEnabled: true
+    envVars:
+      - key: PORT
+        value: 3000
+      - key: NODE_ENV
+        value: production
+      - key: CORS_ORIGINS
+        value: https://ctv-render-13-02.onrender.com,https://adsmood-ctv-api.onrender.com
+
+  # API Backend
+  - type: web
+    name: adsmood-ctv-api
+    env: node
+    buildCommand: cd api && npm install && npm run build
+    startCommand: cd api && npm run start:prod
+    pullRequestPreviewsEnabled: true
+    envVars:
+      - key: PORT
+        value: 3001
+      - key: NODE_ENV
+        value: production
+      - key: DB_SSL
+        value: true
+      - key: ASSETS_URL
+        value: https://adsmood-ctv-assets.onrender.com
+      - key: FRONTEND_URL
+        value: https://ctv-render-13-02.onrender.com
+      - key: ALLOWED_ORIGINS
+        value: https://ctv-render-13-02.onrender.com,http://localhost:3000
+
+databases:
+  # Base de datos PostgreSQL para analytics
+  - name: adsmood-ctv-db
+    databaseName: adsmood_ctv
+    user: adsmood
+    plan: free 
