@@ -18,6 +18,9 @@ model Ad {
   trackingEvents  TrackingEvent[]
   metrics         AdMetrics?
   interactiveData Json?
+
+  @@index([createdAt])
+  @@map("ads")
 }
 
 model MediaFile {
@@ -32,7 +35,11 @@ model MediaFile {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
-  ad        Ad       @relation(fields: [adId], references: [id])
+  ad        Ad       @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+  @@index([adId])
+  @@index([platform])
+  @@map("media_files")
 }
 
 model TrackingEvent {
@@ -45,7 +52,12 @@ model TrackingEvent {
   metadata  Json?
   createdAt DateTime @default(now())
   
-  ad        Ad       @relation(fields: [adId], references: [id])
+  ad        Ad       @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+  @@index([adId])
+  @@index([type])
+  @@index([timestamp])
+  @@map("tracking_events")
 }
 
 model AdMetrics {
@@ -67,5 +79,8 @@ model AdMetrics {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   
-  ad              Ad       @relation(fields: [adId], references: [id])
+  ad              Ad       @relation(fields: [adId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt])
+  @@map("ad_metrics")
 } 
