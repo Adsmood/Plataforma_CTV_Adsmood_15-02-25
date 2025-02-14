@@ -1,0 +1,111 @@
+import { PrismaService } from '../../prisma/prisma.service';
+import { CreateInteractionDto, UpdateInteractionDto } from './dto/interaction.dto';
+import { CreateOverlayDto, UpdateOverlayDto } from './dto/overlay.dto';
+export declare class InteractiveService {
+    private prisma;
+    constructor(prisma: PrismaService);
+    getInteractions(adId: string): Promise<{
+        type: string;
+        config: import("@prisma/client/runtime/library").JsonValue;
+        position: import("@prisma/client/runtime/library").JsonValue;
+        size: import("@prisma/client/runtime/library").JsonValue;
+        startTime: number;
+        endTime: number | null;
+        adId: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+    }[]>;
+    getOverlays(adId: string): Promise<{
+        type: string;
+        position: import("@prisma/client/runtime/library").JsonValue;
+        size: import("@prisma/client/runtime/library").JsonValue;
+        startTime: number;
+        endTime: number | null;
+        content: string;
+        zIndex: number;
+        styles: import("@prisma/client/runtime/library").JsonValue | null;
+        adId: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+    }[]>;
+    createInteraction(adId: string, data: CreateInteractionDto): Promise<{
+        type: string;
+        config: import("@prisma/client/runtime/library").JsonValue;
+        position: import("@prisma/client/runtime/library").JsonValue;
+        size: import("@prisma/client/runtime/library").JsonValue;
+        startTime: number;
+        endTime: number | null;
+        adId: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    createOverlay(adId: string, data: CreateOverlayDto): Promise<{
+        type: string;
+        position: import("@prisma/client/runtime/library").JsonValue;
+        size: import("@prisma/client/runtime/library").JsonValue;
+        startTime: number;
+        endTime: number | null;
+        content: string;
+        zIndex: number;
+        styles: import("@prisma/client/runtime/library").JsonValue | null;
+        adId: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    updateInteraction(id: string, data: UpdateInteractionDto): Promise<{
+        type: string;
+        config: import("@prisma/client/runtime/library").JsonValue;
+        position: import("@prisma/client/runtime/library").JsonValue;
+        size: import("@prisma/client/runtime/library").JsonValue;
+        startTime: number;
+        endTime: number | null;
+        adId: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    updateOverlay(id: string, data: UpdateOverlayDto): Promise<{
+        type: string;
+        position: import("@prisma/client/runtime/library").JsonValue;
+        size: import("@prisma/client/runtime/library").JsonValue;
+        startTime: number;
+        endTime: number | null;
+        content: string;
+        zIndex: number;
+        styles: import("@prisma/client/runtime/library").JsonValue | null;
+        adId: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    deleteInteraction(id: string): Promise<{
+        type: string;
+        config: import("@prisma/client/runtime/library").JsonValue;
+        position: import("@prisma/client/runtime/library").JsonValue;
+        size: import("@prisma/client/runtime/library").JsonValue;
+        startTime: number;
+        endTime: number | null;
+        adId: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+    deleteOverlay(id: string): Promise<{
+        type: string;
+        position: import("@prisma/client/runtime/library").JsonValue;
+        size: import("@prisma/client/runtime/library").JsonValue;
+        startTime: number;
+        endTime: number | null;
+        content: string;
+        zIndex: number;
+        styles: import("@prisma/client/runtime/library").JsonValue | null;
+        adId: string;
+        id: string;
+        createdAt: Date;
+        updatedAt: Date;
+    }>;
+}
