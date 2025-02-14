@@ -1,4 +1,0 @@
-Backup CTV Assets
-Fecha: Thu Feb 13 10:49:34 -03 2025
-Commit: 99e7e9592620c0cd42a4893f171f8aec3fb238e3
-Branch: main

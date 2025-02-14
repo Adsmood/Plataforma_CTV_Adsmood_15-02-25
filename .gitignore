@@ -44,7 +44,13 @@ api/node_modules/.prisma/
 # Temporales
 temp/
 tmp/
+temp_verify/
+backups/
 
 # Docker
 data/
-backups/ 
+
+# Archivos de desarrollo
+*.log
+.DS_Store
+**/.DS_Store 
