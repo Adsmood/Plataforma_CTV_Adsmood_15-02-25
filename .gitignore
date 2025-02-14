@@ -1,14 +1,14 @@
 # Dependencias
-/node_modules
-/.pnp
+node_modules/
+.pnp/
 .pnp.js
 
 # Testing
-/coverage
+coverage/
 
 # Producción
-/build
-/dist
+build/
+dist/
 
 # Misc
 .DS_Store
@@ -28,7 +28,7 @@ pnpm-debug.log*
 # Editor
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 *.suo
 *.ntvs*
 *.njsproj
@@ -36,11 +36,15 @@ pnpm-debug.log*
 *.sw?
 
 # Sistema
-.DS_Store
 Thumbs.db
 
-# IDE
-.idea
-.vscode
-*.swp
-*.swo 
+# Prisma
+api/node_modules/.prisma/
+
+# Temporales
+temp/
+tmp/
+
+# Docker
+data/
+backups/ 

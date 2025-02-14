@@ -1,0 +1,21 @@
+{
+  "name": "adsmood-ctv-platform",
+  "version": "1.0.0",
+  "private": true,
+  "workspaces": [
+    "api",
+    "frontend"
+  ],
+  "scripts": {
+    "start:api": "cd api && npm run start:dev",
+    "start:frontend": "cd frontend && npm run dev",
+    "build:api": "cd api && npm run build",
+    "build:frontend": "cd frontend && npm run build",
+    "install:all": "npm install && cd api && npm install && cd ../frontend && npm install",
+    "prisma:generate": "cd api && npx prisma generate",
+    "prisma:migrate": "cd api && npx prisma migrate deploy",
+    "prisma:studio": "cd api && npx prisma studio",
+    "docker:build": "docker build -t adsmood-ctv-assets .",
+    "docker:start": "docker run -v ${PWD}/data:/data -p 3001:80 adsmood-ctv-assets"
+  }
+} 
