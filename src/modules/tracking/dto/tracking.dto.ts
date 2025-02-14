@@ -41,7 +41,7 @@ export class TrackingQueryDto {
 export class TrackEventDto {
   @ApiProperty({ description: 'Tipo de evento interactivo' })
   @IsString()
-  type: string;
+  type!: string;
 
   @ApiProperty({ required: false, description: 'Datos adicionales del evento' })
   @IsObject()
