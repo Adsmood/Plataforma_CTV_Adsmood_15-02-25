@@ -4,9 +4,9 @@ services:
     name: adsmood-ctv-frontend
     env: static
     region: global
-    rootDir: frontend
     buildCommand: npm ci && npm run build
-    staticPublishPath: dist
+    staticPublishPath: frontend/dist
+    workingDirectory: frontend
     headers:
       # Cache para archivos estáticos
       - path: /assets/*
@@ -79,9 +79,9 @@ services:
     name: adsmood-ctv-api
     env: node
     region: oregon
-    rootDir: api
     buildCommand: npm install && npx prisma generate && npm run build
     startCommand: node dist/main
+    workingDirectory: api
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
