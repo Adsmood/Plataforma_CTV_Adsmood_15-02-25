@@ -80,8 +80,8 @@ services:
     env: node
     region: oregon
     rootDir: api
-    buildCommand: npm install --location=global --unsafe-perm @nestjs/cli && npm ci && npx prisma generate && npm run build
-    startCommand: node dist/main
+    buildCommand: cd api && npm install && npx prisma generate && npm run build
+    startCommand: cd api && node dist/main
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
