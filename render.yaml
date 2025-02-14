@@ -3,6 +3,7 @@ services:
   - type: web
     name: adsmood-ctv-frontend
     env: static
+    region: global
     buildCommand: npm install && npm run build
     staticPublishPath: ./dist
     headers:
