@@ -5,8 +5,8 @@ services:
     env: static
     region: global
     rootDir: frontend
-    buildCommand: npm ci && npm run build
-    staticPublishPath: dist
+    buildCommand: cd frontend && npm ci && npm run build
+    staticPublishPath: frontend/dist
     headers:
       # Cache para archivos estáticos
       - path: /assets/*
