@@ -114,8 +114,6 @@ services:
         generateValue: true
       - key: CORS_ORIGINS
         value: https://ctv-render-13-02.onrender.com,https://adsmood-ctv-assets.onrender.com
-      - key: ANALYTICS_ENABLED
-        value: "true"
       - key: LOG_LEVEL
         value: info
       - key: LOG_FORMAT
@@ -126,8 +124,27 @@ services:
         value: adsmood_ctv
       - key: PROMETHEUS_ENABLED
         value: "true"
+    scaling:
+      minInstances: 1
+      maxInstances: 3
+      targetMemoryPercent: 80
+      targetCPUPercent: 80
+    headers:
+      - path: /*
+        name: X-Frame-Options
+        value: SAMEORIGIN
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-XSS-Protection
+        value: 1; mode=block
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self'; img-src 'self' data: blob: https:; media-src 'self' blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';"
 
 databases:
   - name: adsmood-ctv-db
     plan: starter
-    ipAllowList: [] # Permitir todas las IPs 
+    ipAllowList: [] # Permitir todas las IPs
+    postgresMajorVersion: 15 
