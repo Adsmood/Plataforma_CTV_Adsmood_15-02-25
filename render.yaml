@@ -5,8 +5,8 @@ services:
     env: static
     region: global
     rootDir: frontend
-    buildCommand: cd frontend && npm ci && npm run build
-    staticPublishPath: frontend/dist
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
     headers:
       # Cache para archivos estáticos
       - path: /assets/*
@@ -80,8 +80,8 @@ services:
     env: node
     region: oregon
     rootDir: api
-    buildCommand: cd api && npm install && npx prisma generate && npm run build
-    startCommand: cd api && node dist/main
+    buildCommand: npm install && npx prisma generate && npm run build
+    startCommand: node dist/main
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
