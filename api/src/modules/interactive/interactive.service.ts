@@ -1,5 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
+import { CreateInteractionDto, UpdateInteractionDto } from './dto/interaction.dto';
+import { CreateOverlayDto, UpdateOverlayDto } from './dto/overlay.dto';
 
 @Injectable()
 export class InteractiveService {
@@ -19,7 +21,7 @@ export class InteractiveService {
     });
   }
 
-  async createInteraction(adId: string, data: any) {
+  async createInteraction(adId: string, data: CreateInteractionDto) {
     return this.prisma.interaction.create({
       data: {
         ...data,
@@ -28,7 +30,7 @@ export class InteractiveService {
     });
   }
 
-  async createOverlay(adId: string, data: any) {
+  async createOverlay(adId: string, data: CreateOverlayDto) {
     return this.prisma.overlay.create({
       data: {
         ...data,
@@ -37,14 +39,14 @@ export class InteractiveService {
     });
   }
 
-  async updateInteraction(id: string, data: any) {
+  async updateInteraction(id: string, data: UpdateInteractionDto) {
     return this.prisma.interaction.update({
       where: { id },
       data,
     });
   }
 
-  async updateOverlay(id: string, data: any) {
+  async updateOverlay(id: string, data: UpdateOverlayDto) {
     return this.prisma.overlay.update({
       where: { id },
       data,

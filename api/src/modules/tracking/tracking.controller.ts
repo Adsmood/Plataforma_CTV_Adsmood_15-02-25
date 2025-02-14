@@ -1,5 +1,6 @@
 import { Controller, Get, Post, Param, Body, Query } from '@nestjs/common';
 import { TrackingService } from './tracking.service';
+import { TrackEventDto, GetEventsQueryDto } from './dto/tracking.dto';
 
 @Controller('track')
 export class TrackingController {
@@ -9,7 +10,7 @@ export class TrackingController {
   async trackEvent(
     @Param('type') type: string,
     @Param('adId') adId: string,
-    @Body() metadata: any,
+    @Body() metadata: Record<string, any>,
   ) {
     await this.trackingService.trackEvent(type, adId, metadata);
     return { success: true };
@@ -23,8 +24,8 @@ export class TrackingController {
   @Get('events/:adId')
   getEvents(
     @Param('adId') adId: string,
-    @Query('type') type?: string,
+    @Query() query: GetEventsQueryDto,
   ) {
-    return this.trackingService.getEvents(adId, type);
+    return this.trackingService.getEvents(adId, query.type);
   }
 } 
