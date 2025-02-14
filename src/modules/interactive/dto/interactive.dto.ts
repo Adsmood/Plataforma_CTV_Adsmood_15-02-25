@@ -22,13 +22,13 @@ export class PositionDto {
   @IsNumber()
   @Min(0)
   @Max(100)
-  x: number;
+  x: number = 50;
 
   @ApiProperty({ description: 'Posición Y (0-100)', minimum: 0, maximum: 100 })
   @IsNumber()
   @Min(0)
   @Max(100)
-  y: number;
+  y: number = 50;
 }
 
 export class SizeDto {
@@ -36,38 +36,38 @@ export class SizeDto {
   @IsNumber()
   @Min(0)
   @Max(100)
-  width: number;
+  width: number = 100;
 
   @ApiProperty({ description: 'Alto (0-100)', minimum: 0, maximum: 100 })
   @IsNumber()
   @Min(0)
   @Max(100)
-  height: number;
+  height: number = 100;
 }
 
 export class CreateInteractionDto {
   @ApiProperty({ enum: InteractionType, description: 'Tipo de interacción' })
   @IsEnum(InteractionType)
-  type: InteractionType;
+  type!: InteractionType;
 
   @ApiProperty({ description: 'Configuración específica de la interacción' })
   @IsObject()
-  config: Record<string, any>;
+  config!: Record<string, any>;
 
   @ApiProperty({ type: PositionDto, description: 'Posición de la interacción' })
   @Type(() => PositionDto)
   @IsObject()
-  position: PositionDto;
+  position!: PositionDto;
 
   @ApiProperty({ type: SizeDto, description: 'Tamaño de la interacción' })
   @Type(() => SizeDto)
   @IsObject()
-  size: SizeDto;
+  size!: SizeDto;
 
   @ApiProperty({ description: 'Tiempo de inicio en segundos' })
   @IsNumber()
   @Min(0)
-  startTime: number;
+  startTime!: number;
 
   @ApiProperty({ description: 'Tiempo de fin en segundos (opcional)', required: false })
   @IsNumber()
@@ -79,26 +79,26 @@ export class CreateInteractionDto {
 export class CreateOverlayDto {
   @ApiProperty({ enum: OverlayType, description: 'Tipo de overlay' })
   @IsEnum(OverlayType)
-  type: OverlayType;
+  type!: OverlayType;
 
   @ApiProperty({ description: 'Contenido del overlay (URL o HTML)' })
   @IsString()
-  content: string;
+  content!: string;
 
   @ApiProperty({ type: PositionDto, description: 'Posición del overlay' })
   @Type(() => PositionDto)
   @IsObject()
-  position: PositionDto;
+  position!: PositionDto;
 
   @ApiProperty({ type: SizeDto, description: 'Tamaño del overlay' })
   @Type(() => SizeDto)
   @IsObject()
-  size: SizeDto;
+  size!: SizeDto;
 
   @ApiProperty({ description: 'Tiempo de inicio en segundos' })
   @IsNumber()
   @Min(0)
-  startTime: number;
+  startTime!: number;
 
   @ApiProperty({ description: 'Tiempo de fin en segundos (opcional)', required: false })
   @IsNumber()
@@ -110,7 +110,7 @@ export class CreateOverlayDto {
   @IsInt()
   @Min(0)
   @IsOptional()
-  zIndex?: number;
+  zIndex: number = 0;
 
   @ApiProperty({ description: 'Estilos CSS adicionales', required: false })
   @IsObject()
