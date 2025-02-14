@@ -392,11 +392,12 @@ const ChoiceElement: React.FC<ChoiceElementProps> = ({ data, isSelected, element
                 <Box sx={{ height: 200 }}>
                   <FileUploader
                     onFileAccepted={handleOptionImageUpload}
+                    onError={(error) => console.error('Error al subir imagen:', error)}
                     accept={{
                       'image/*': ['.png', '.jpg', '.jpeg'],
                     }}
                     maxSize={10485760} // 10MB
-                    title="Arrastra una imagen aquí"
+                    title="Arrastra una imagen aquí, o haz clic para seleccionar"
                     icon={<EditIcon />}
                   />
                 </Box>
@@ -439,11 +440,12 @@ const ChoiceElement: React.FC<ChoiceElementProps> = ({ data, isSelected, element
                       <Box sx={{ height: 100 }}>
                         <FileUploader
                           onFileAccepted={(file) => handleOptionVideoUpload(file, option.id)}
+                          onError={(error) => console.error('Error al subir video:', error)}
                           accept={{
                             'video/*': ['.mp4', '.webm', '.ogg'],
                           }}
                           maxSize={52428800} // 50MB
-                          title={option.videoUrl ? "Video cargado - Click para cambiar" : "Arrastra el video para esta opción"}
+                          title={option.videoUrl ? "Video cargado - Click para cambiar" : "Arrastra un video aquí, o haz clic para seleccionar"}
                           icon={<EditIcon />}
                         />
                       </Box>

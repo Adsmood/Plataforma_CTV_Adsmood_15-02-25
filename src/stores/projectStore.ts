@@ -375,59 +375,36 @@ const useProjectStore = create<ProjectState>()(
             // Esperar a que el DOM se actualice
             await new Promise(resolve => setTimeout(resolve, 1000));
             
-            const canvas = document.querySelector('#canvas-container');
-            if (!canvas) {
-              console.warn('Canvas container no encontrado, intentando de nuevo...');
-              await new Promise(resolve => setTimeout(resolve, 1000));
-              const retryCanvas = document.querySelector('#canvas-container');
-              if (!retryCanvas) {
-                console.error('Canvas container no encontrado después del reintento');
-                // Retornar una miniatura en blanco en lugar de cadena vacía
-                const blankCanvas = document.createElement('canvas');
-                blankCanvas.width = 200;
-                blankCanvas.height = 150;
-                const ctx = blankCanvas.getContext('2d');
-                if (ctx) {
-                  ctx.fillStyle = '#000000';
-                  ctx.fillRect(0, 0, 200, 150);
-                }
-                return blankCanvas.toDataURL('image/jpeg', 0.3);
-              }
-              
-              const thumbnailCanvas = await html2canvas(retryCanvas as HTMLElement, {
-                width: 200,
-                height: 150,
-                background: '#000000',
-                logging: false,
-                useCORS: true,
-                allowTaint: true,
-              });
-              
-              return thumbnailCanvas.toDataURL('image/jpeg', 0.3);
-            }
+            const element = document.querySelector('#canvas-container');
+            if (!element) throw new Error('Canvas no encontrado');
 
-            const thumbnailCanvas = await html2canvas(canvas as HTMLElement, {
-              width: 200,
-              height: 150,
-              background: '#000000',
+            const canvasResult = await html2canvas(element as HTMLElement, {
+              width: 1280,
+              height: 720,
+              backgroundColor: '#000000',
               logging: false,
               useCORS: true,
               allowTaint: true,
+              // @ts-ignore
+              onclone: (doc: Document) => {
+                const controls = doc.querySelector('.controls-overlay');
+                if (controls) controls.remove();
+              }
             });
-            
+
+            const thumbnailCanvas = await html2canvas(canvasResult, {
+              width: 200,
+              height: 150,
+              backgroundColor: '#000000',
+              logging: false,
+              useCORS: true,
+              allowTaint: true
+            });
+
             return thumbnailCanvas.toDataURL('image/jpeg', 0.3);
           } catch (error) {
             console.error('Error al crear thumbnail:', error);
-            // Retornar una miniatura en blanco en caso de error
-            const blankCanvas = document.createElement('canvas');
-            blankCanvas.width = 200;
-            blankCanvas.height = 150;
-            const ctx = blankCanvas.getContext('2d');
-            if (ctx) {
-              ctx.fillStyle = '#000000';
-              ctx.fillRect(0, 0, 200, 150);
-            }
-            return blankCanvas.toDataURL('image/jpeg', 0.3);
+            return '';
           }
         },
         closeProject: () => {

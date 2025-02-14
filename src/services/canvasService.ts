@@ -26,7 +26,7 @@ export const captureCanvas = async (
     const canvas = await html2canvas(canvasElement, {
       width: config.resolution === '4k' ? 3840 : 1920,
       height: config.resolution === '4k' ? 2160 : 1080,
-      background: '#000000',
+      backgroundColor: '#000000',
       logging: false,
       useCORS: true,
       allowTaint: true,
