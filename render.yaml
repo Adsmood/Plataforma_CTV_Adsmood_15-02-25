@@ -4,8 +4,9 @@ services:
     name: adsmood-ctv-frontend
     env: static
     region: global
-    buildCommand: cd frontend && npm ci && npm run build
-    staticPublishPath: ./frontend/dist
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    staticPublishPath: dist
     headers:
       # Cache para archivos estáticos
       - path: /assets/*
@@ -78,8 +79,9 @@ services:
     name: adsmood-ctv-api
     env: node
     region: oregon
-    buildCommand: cd api && npm install --location=global --unsafe-perm @nestjs/cli && npm ci && npx prisma generate && npm run build
-    startCommand: cd api && node dist/main
+    rootDir: api
+    buildCommand: npm install --location=global --unsafe-perm @nestjs/cli && npm ci && npx prisma generate && npm run build
+    startCommand: node dist/main
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
