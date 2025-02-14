@@ -1,104 +1,95 @@
 import React from 'react';
-import { useDropzone, FileRejection } from 'react-dropzone';
-import { Box, Typography, Alert } from '@mui/material';
+import { useDropzone } from 'react-dropzone';
+import { Box, Typography } from '@mui/material';
+import { styled } from '@mui/material/styles';
 
 interface FileUploaderProps {
   onFileAccepted: (file: File) => void;
-  onError?: (error: Error) => void;
+  onError: (error: Error) => void;
   accept?: Record<string, string[]>;
   maxSize?: number;
   title?: string;
   icon?: React.ReactNode;
-  disabled?: boolean;
   error?: string | null;
+  disabled?: boolean;
 }
 
-export const FileUploader: React.FC<FileUploaderProps> = ({
+const DropzoneBox = styled(Box)(({ theme }) => ({
+  border: `2px dashed ${theme.palette.divider}`,
+  borderRadius: theme.shape.borderRadius,
+  padding: theme.spacing(4),
+  textAlign: 'center',
+  cursor: 'pointer',
+  transition: 'all 0.2s ease-in-out',
+  height: '100%',
+  display: 'flex',
+  flexDirection: 'column',
+  alignItems: 'center',
+  justifyContent: 'center',
+  gap: theme.spacing(2),
+  '&:hover': {
+    borderColor: theme.palette.primary.main,
+    backgroundColor: theme.palette.action.hover,
+  },
+  '&.error': {
+    borderColor: theme.palette.error.main,
+    color: theme.palette.error.main,
+  },
+  '&.disabled': {
+    opacity: 0.5,
+    cursor: 'not-allowed',
+    pointerEvents: 'none',
+  },
+}));
+
+const FileUploader: React.FC<FileUploaderProps> = ({
   onFileAccepted,
   onError,
   accept,
-  maxSize,
+  maxSize = 5242880, // 5MB por defecto
   title = 'Arrastra un archivo aquí o haz clic para seleccionar',
   icon,
+  error,
   disabled = false,
-  error = null,
 }) => {
-  const onDropAccepted = (files: File[]) => {
-    if (files.length > 0) {
-      try {
-        const file = files[0];
-        console.log('Archivo aceptado:', {
-          name: file.name,
-          type: file.type,
-          size: file.size
-        });
-        onFileAccepted(file);
-      } catch (error) {
-        console.error('Error al procesar el archivo:', error);
-      }
-    }
-  };
-
-  const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
-    onDropAccepted,
-    accept,
-    maxSize,
-    disabled,
-    multiple: false,
-    onDropRejected: (fileRejections: FileRejection[]) => {
-      if (onError && fileRejections.length > 0) {
-        onError(new Error(fileRejections[0].errors[0].message));
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDropAccepted: (files) => {
+      if (files.length > 0) {
+        onFileAccepted(files[0]);
       }
     },
+    onDropRejected: (fileRejections) => {
+      const rejection = fileRejections[0];
+      if (rejection) {
+        const error = rejection.errors[0];
+        onError(new Error(error.message));
+      }
+    },
+    accept,
+    maxSize,
+    multiple: false,
+    disabled,
   });
 
   return (
-    <Box sx={{ height: '100%', position: 'relative' }}>
-      <Box
-        {...getRootProps()}
-        sx={{
-          height: '100%',
-          border: '2px dashed',
-          borderColor: error ? 'error.main' : (isDragActive ? 'primary.main' : 'grey.300'),
-          borderRadius: 1,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          p: 2,
-          cursor: disabled ? 'not-allowed' : 'pointer',
-          opacity: disabled ? 0.5 : 1,
-          bgcolor: isDragActive ? 'action.hover' : 'background.paper',
-          transition: 'all 0.2s ease',
-          '&:hover': disabled ? undefined : {
-            bgcolor: 'action.hover',
-          },
-        }}
-      >
-        <input {...getInputProps()} />
-        {icon && <Box sx={{ mb: 2, color: error ? 'error.main' : 'primary.main' }}>{icon}</Box>}
-        <Typography
-          variant="body1"
-          align="center"
-          color={error ? 'error' : 'textSecondary'}
-        >
-          {isDragReject ? 'Archivo no permitido' : title}
-        </Typography>
-      </Box>
+    <DropzoneBox
+      {...getRootProps()}
+      className={`${error ? 'error' : ''} ${disabled ? 'disabled' : ''}`}
+    >
+      <input {...getInputProps()} />
+      {icon && <Box sx={{ mb: 2 }}>{icon}</Box>}
+      <Typography variant="body1" component="div">
+        {isDragActive ? 'Suelta el archivo aquí' : title}
+      </Typography>
       {error && (
-        <Alert 
-          severity="error" 
-          sx={{ 
-            position: 'absolute',
-            bottom: 8,
-            left: 8,
-            right: 8,
-          }}
-        >
+        <Typography variant="caption" color="error">
           {error}
-        </Alert>
+        </Typography>
       )}
-    </Box>
+      <Typography variant="caption" color="textSecondary">
+        Tamaño máximo: {Math.round(maxSize / 1048576)}MB
+      </Typography>
+    </DropzoneBox>
   );
 };
 

@@ -1,14 +1,14 @@
 # Dependencias
-node_modules
-.pnp
+/node_modules
+/.pnp
 .pnp.js
 
 # Testing
-coverage
+/coverage
 
 # Producción
-dist
-build
+/build
+/dist
 
 # Misc
 .DS_Store
@@ -37,4 +37,10 @@ pnpm-debug.log*
 
 # Sistema
 .DS_Store
-Thumbs.db 
+Thumbs.db
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo 
