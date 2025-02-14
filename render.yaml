@@ -36,6 +36,9 @@ services:
       - path: /*
         name: X-XSS-Protection
         value: 1; mode=block
+      - path: /*
+        name: Content-Security-Policy
+        value: "default-src 'self' https://adsmood-ctv-api.onrender.com https://adsmood-ctv-assets.onrender.com; img-src 'self' data: blob: https:; media-src 'self' blob: https:; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline';"
     routes:
       - type: rewrite
         source: /*
@@ -44,7 +47,7 @@ services:
       - key: NODE_VERSION
         value: 18.19.0
       - key: VITE_API_URL
-        sync: false
+        value: https://adsmood-ctv-api.onrender.com
       - key: VITE_ASSETS_URL
         value: https://adsmood-ctv-assets.onrender.com
 
@@ -58,10 +61,16 @@ services:
       sizeGB: 10
     buildCommand: docker build -t adsmood-ctv-assets .
     startCommand: docker run -v ${VOLUME_PATH}:/data -p ${PORT}:80 adsmood-ctv-assets
-    healthCheckPath: /
+    healthCheckPath: /health
     envVars:
       - key: NODE_ENV
         value: production
+      - key: VOLUME_PATH
+        value: /data
+      - key: STORAGE_SIZE
+        value: 10GB
+      - key: MAX_UPLOAD_SIZE
+        value: 1073741824
 
   # Servicio de API
   - type: web
@@ -71,6 +80,7 @@ services:
     buildCommand: npm install --location=global --unsafe-perm @nestjs/cli && npm ci && npm run build
     startCommand: npm run start:prod
     healthCheckPath: /health
+    autoDeploy: true
     envVars:
       - key: NODE_ENV
         value: production
@@ -82,11 +92,42 @@ services:
         fromDatabase:
           name: adsmood-ctv-db
           property: connectionString
+      - key: DATABASE_POOL_SIZE
+        value: 20
       - key: API_URL
         value: https://adsmood-ctv-api.onrender.com
       - key: ASSETS_URL
         value: https://adsmood-ctv-assets.onrender.com
+      - key: FRONTEND_URL
+        value: https://ctv-render-13-02.onrender.com
+      - key: TRACKING_ENABLED
+        value: "true"
+      - key: TRACKING_BATCH_SIZE
+        value: 100
+      - key: TRACKING_FLUSH_INTERVAL
+        value: 60000
+      - key: CACHE_TTL
+        value: 3600
+      - key: CACHE_MAX_ITEMS
+        value: 1000
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: https://ctv-render-13-02.onrender.com,https://adsmood-ctv-assets.onrender.com
+      - key: ANALYTICS_ENABLED
+        value: "true"
+      - key: LOG_LEVEL
+        value: info
+      - key: LOG_FORMAT
+        value: json
+      - key: METRICS_ENABLED
+        value: "true"
+      - key: METRICS_PREFIX
+        value: adsmood_ctv
+      - key: PROMETHEUS_ENABLED
+        value: "true"
 
 databases:
   - name: adsmood-ctv-db
-    plan: starter 
+    plan: starter
+    ipAllowList: [] # Permitir todas las IPs 
