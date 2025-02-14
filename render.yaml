@@ -1,7 +1,7 @@
 services:
   # Servicio Frontend
   - type: web
-    name: adsmood-ctv-frontend
+    name: ctv-render-13-02
     env: static
     region: global
     buildCommand: npm ci && npm run build
@@ -53,7 +53,7 @@ services:
       - key: VITE_ASSETS_URL
         value: https://adsmood-ctv-assets.onrender.com
 
-  # Servicio de Assets (Público)
+  # Servicio de Assets
   - type: web
     name: adsmood-ctv-assets
     env: docker
