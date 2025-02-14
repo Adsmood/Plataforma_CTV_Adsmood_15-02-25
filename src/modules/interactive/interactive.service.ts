@@ -1,24 +1,21 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
-import {
-  CreateInteractionDto,
-  CreateOverlayDto,
-  UpdateInteractionDto,
-  UpdateOverlayDto,
-} from './dto/interactive.dto';
+import { CreateInteractionDto, CreateOverlayDto, UpdateInteractionDto, UpdateOverlayDto } from './dto/interactive.dto';
 
 @Injectable()
 export class InteractiveService {
   constructor(private readonly prisma: PrismaService) {}
 
   async createInteraction(adId: string, dto: CreateInteractionDto) {
-    const ad = await this.prisma.ad.findUnique({ where: { id: adId } });
-    if (!ad) throw new NotFoundException(`Ad with ID ${adId} not found`);
-
     return this.prisma.interaction.create({
       data: {
-        ...dto,
-        ad: { connect: { id: adId } },
+        type: dto.type,
+        config: JSON.stringify(dto.config),
+        position: JSON.stringify(dto.position),
+        size: JSON.stringify(dto.size),
+        startTime: dto.startTime,
+        endTime: dto.endTime,
+        adId,
       },
     });
   }
@@ -27,12 +24,21 @@ export class InteractiveService {
     const interaction = await this.prisma.interaction.findUnique({
       where: { id },
     });
-    if (!interaction)
+
+    if (!interaction) {
       throw new NotFoundException(`Interaction with ID ${id} not found`);
+    }
 
     return this.prisma.interaction.update({
       where: { id },
-      data: dto,
+      data: {
+        type: dto.type,
+        config: JSON.stringify(dto.config),
+        position: JSON.stringify(dto.position),
+        size: JSON.stringify(dto.size),
+        startTime: dto.startTime,
+        endTime: dto.endTime,
+      },
     });
   }
 
@@ -40,30 +46,41 @@ export class InteractiveService {
     const interaction = await this.prisma.interaction.findUnique({
       where: { id },
     });
-    if (!interaction)
+
+    if (!interaction) {
       throw new NotFoundException(`Interaction with ID ${id} not found`);
+    }
 
-    await this.prisma.interaction.delete({ where: { id } });
-  }
-
-  async getInteractions(adId: string) {
-    const ad = await this.prisma.ad.findUnique({ where: { id: adId } });
-    if (!ad) throw new NotFoundException(`Ad with ID ${adId} not found`);
-
-    return this.prisma.interaction.findMany({
-      where: { adId },
-      orderBy: { createdAt: 'desc' },
+    return this.prisma.interaction.delete({
+      where: { id },
     });
   }
 
-  async createOverlay(adId: string, dto: CreateOverlayDto) {
-    const ad = await this.prisma.ad.findUnique({ where: { id: adId } });
-    if (!ad) throw new NotFoundException(`Ad with ID ${adId} not found`);
+  async getInteractions(adId: string) {
+    const interactions = await this.prisma.interaction.findMany({
+      where: { adId },
+    });
 
+    return interactions.map(interaction => ({
+      ...interaction,
+      config: JSON.parse(interaction.config as string),
+      position: JSON.parse(interaction.position as string),
+      size: JSON.parse(interaction.size as string),
+    }));
+  }
+
+  async createOverlay(adId: string, dto: CreateOverlayDto) {
     return this.prisma.overlay.create({
       data: {
-        ...dto,
-        ad: { connect: { id: adId } },
+        type: dto.type,
+        content: dto.content,
+        position: JSON.stringify(dto.position),
+        size: JSON.stringify(dto.size),
+        startTime: dto.startTime,
+        endTime: dto.endTime,
+        styles: dto.styles ? JSON.stringify(dto.styles) : undefined,
+        zIndex: dto.zIndex || 0,
+        adId,
       },
     });
   }
@@ -72,11 +89,23 @@ export class InteractiveService {
     const overlay = await this.prisma.overlay.findUnique({
       where: { id },
     });
-    if (!overlay) throw new NotFoundException(`Overlay with ID ${id} not found`);
+
+    if (!overlay) {
+      throw new NotFoundException(`Overlay with ID ${id} not found`);
+    }
 
     return this.prisma.overlay.update({
       where: { id },
-      data: dto,
+      data: {
+        type: dto.type,
+        content: dto.content,
+        position: JSON.stringify(dto.position),
+        size: JSON.stringify(dto.size),
+        startTime: dto.startTime,
+        endTime: dto.endTime,
+        styles: dto.styles ? JSON.stringify(dto.styles) : undefined,
+        zIndex: dto.zIndex || 0,
+      },
     });
   }
 
@@ -84,34 +113,33 @@ export class InteractiveService {
     const overlay = await this.prisma.overlay.findUnique({
       where: { id },
     });
-    if (!overlay) throw new NotFoundException(`Overlay with ID ${id} not found`);
 
-    await this.prisma.overlay.delete({ where: { id } });
-  }
+    if (!overlay) {
+      throw new NotFoundException(`Overlay with ID ${id} not found`);
+    }
 
-  async getOverlays(adId: string) {
-    const ad = await this.prisma.ad.findUnique({ where: { id: adId } });
-    if (!ad) throw new NotFoundException(`Ad with ID ${adId} not found`);
-
-    return this.prisma.overlay.findMany({
-      where: { adId },
-      orderBy: { createdAt: 'desc' },
+    return this.prisma.overlay.delete({
+      where: { id },
     });
   }
 
-  async getInteractiveData(adId: string) {
-    const ad = await this.prisma.ad.findUnique({ where: { id: adId } });
-    if (!ad) throw new NotFoundException(`Ad with ID ${adId} not found`);
+  async getOverlays(adId: string) {
+    const overlays = await this.prisma.overlay.findMany({
+      where: { adId },
+    });
 
+    return overlays.map(overlay => ({
+      ...overlay,
+      position: JSON.parse(overlay.position as string),
+      size: JSON.parse(overlay.size as string),
+      styles: overlay.styles ? JSON.parse(overlay.styles as string) : null,
+    }));
+  }
+
+  async getInteractiveData(adId: string) {
     const [interactions, overlays] = await Promise.all([
-      this.prisma.interaction.findMany({
-        where: { adId },
-        orderBy: { createdAt: 'desc' },
-      }),
-      this.prisma.overlay.findMany({
-        where: { adId },
-        orderBy: { createdAt: 'desc' },
-      }),
+      this.getInteractions(adId),
+      this.getOverlays(adId),
     ]);
 
     return {
@@ -119,4 +147,4 @@ export class InteractiveService {
       overlays,
     };
   }
-} 
+}
