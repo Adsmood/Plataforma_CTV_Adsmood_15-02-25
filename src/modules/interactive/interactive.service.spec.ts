@@ -8,21 +8,16 @@ describe('InteractiveService', () => {
   let service: InteractiveService;
   let prisma: PrismaService;
 
-  const mockPrismaService = {
-    interaction: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-      findMany: jest.fn(),
-    },
-    overlay: {
-      create: jest.fn(),
-      findUnique: jest.fn(),
-      update: jest.fn(),
-      delete: jest.fn(),
-      findMany: jest.fn(),
-    },
+  type MockPrismaService = {
+    $queryRaw: jest.Mock;
+    $executeRaw: jest.Mock;
+    $transaction: jest.Mock<Promise<any>>;
+  };
+
+  const mockPrismaService: MockPrismaService = {
+    $queryRaw: jest.fn(),
+    $executeRaw: jest.fn(),
+    $transaction: jest.fn((callback) => Promise.resolve(callback(mockPrismaService))),
   };
 
   beforeEach(async () => {
@@ -56,21 +51,28 @@ describe('InteractiveService', () => {
         endTime: 10,
       };
 
-      const expected = {
+      const mockResult = [{
         id: 'int-1',
-        ...dto,
-        adId,
+        type: dto.type,
         config: JSON.stringify(dto.config),
         position: JSON.stringify(dto.position),
         size: JSON.stringify(dto.size),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+        start_time: dto.startTime,
+        end_time: dto.endTime,
+        ad_id: adId,
+        created_at: new Date(),
+        updated_at: new Date(),
+      }];
 
-      mockPrismaService.interaction.create.mockResolvedValue(expected);
+      mockPrismaService.$queryRaw.mockResolvedValue(mockResult);
 
       const result = await service.createInteraction(adId, dto);
-      expect(result).toEqual(expected);
+      expect(result).toEqual({
+        ...mockResult[0],
+        config: dto.config,
+        position: dto.position,
+        size: dto.size,
+      });
     });
   });
 
@@ -88,57 +90,67 @@ describe('InteractiveService', () => {
         zIndex: 1,
       };
 
-      const expected = {
+      const mockResult = [{
         id: 'ovl-1',
-        ...dto,
-        adId,
+        type: dto.type,
+        content: dto.content,
         position: JSON.stringify(dto.position),
         size: JSON.stringify(dto.size),
+        start_time: dto.startTime,
+        end_time: dto.endTime,
         styles: JSON.stringify(dto.styles),
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+        z_index: dto.zIndex,
+        ad_id: adId,
+        created_at: new Date(),
+        updated_at: new Date(),
+      }];
 
-      mockPrismaService.overlay.create.mockResolvedValue(expected);
+      mockPrismaService.$queryRaw.mockResolvedValue(mockResult);
 
       const result = await service.createOverlay(adId, dto);
-      expect(result).toEqual(expected);
+      expect(result).toEqual({
+        ...mockResult[0],
+        position: dto.position,
+        size: dto.size,
+        styles: dto.styles,
+      });
     });
   });
 
   describe('getInteractiveData', () => {
     it('should return parsed interactions and overlays', async () => {
       const adId = 'ad-1';
-      const mockInteraction = {
+      const mockInteractions = [{
         id: 'int-1',
         type: InteractionType.BUTTON,
         config: JSON.stringify({ action: 'test' }),
         position: JSON.stringify({ x: 50, y: 50 }),
         size: JSON.stringify({ width: 100, height: 100 }),
-        startTime: 0,
-        endTime: 10,
-        adId,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+        start_time: 0,
+        end_time: 10,
+        ad_id: adId,
+        created_at: new Date(),
+        updated_at: new Date(),
+      }];
 
-      const mockOverlay = {
+      const mockOverlays = [{
         id: 'ovl-1',
         type: OverlayType.IMAGE,
         content: 'https://example.com/test.jpg',
         position: JSON.stringify({ x: 50, y: 50 }),
         size: JSON.stringify({ width: 100, height: 100 }),
         styles: JSON.stringify({ opacity: 0.5 }),
-        startTime: 0,
-        endTime: 10,
-        zIndex: 1,
-        adId,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
+        start_time: 0,
+        end_time: 10,
+        z_index: 1,
+        ad_id: adId,
+        created_at: new Date(),
+        updated_at: new Date(),
+      }];
 
-      mockPrismaService.interaction.findMany.mockResolvedValue([mockInteraction]);
-      mockPrismaService.overlay.findMany.mockResolvedValue([mockOverlay]);
+      mockPrismaService.$queryRaw
+        .mockResolvedValueOnce(mockInteractions)
+        .mockResolvedValueOnce(mockOverlays);
 
       const result = await service.getInteractiveData(adId);
 
