@@ -21,7 +21,8 @@
     "strict": false,
     "paths": {
       "@/*": ["src/*"]
-    }
+    },
+    "types": ["node", "@nestjs/common", "@nestjs/swagger"]
   },
   "include": ["src/modules/**/*.ts", "src/modules/**/*.d.ts"],
   "exclude": ["node_modules", "dist"]

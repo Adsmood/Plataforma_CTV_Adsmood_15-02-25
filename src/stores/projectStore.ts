@@ -394,38 +394,28 @@ const useProjectStore = create<ProjectState>()(
                 return blankCanvas.toDataURL('image/jpeg', 0.3);
               }
               
-              const thumbnail = await html2canvas(retryCanvas as HTMLElement, {
+              const thumbnailCanvas = await html2canvas(retryCanvas as HTMLElement, {
                 width: 200,
                 height: 150,
-                backgroundColor: '#000000',
+                background: '#000000',
                 logging: false,
                 useCORS: true,
                 allowTaint: true,
-                // @ts-ignore
-                onclone: (doc: Document) => {
-                  const controls = doc.querySelector('.controls-overlay');
-                  if (controls) controls.remove();
-                }
               });
               
-              return thumbnail.toDataURL('image/jpeg', 0.3);
+              return thumbnailCanvas.toDataURL('image/jpeg', 0.3);
             }
 
-            const thumbnail = await html2canvas(canvas as HTMLElement, {
+            const thumbnailCanvas = await html2canvas(canvas as HTMLElement, {
               width: 200,
               height: 150,
-              backgroundColor: '#000000',
+              background: '#000000',
               logging: false,
               useCORS: true,
               allowTaint: true,
-              // @ts-ignore
-              onclone: (doc: Document) => {
-                const controls = doc.querySelector('.controls-overlay');
-                if (controls) controls.remove();
-              }
             });
             
-            return thumbnail.toDataURL('image/jpeg', 0.3);
+            return thumbnailCanvas.toDataURL('image/jpeg', 0.3);
           } catch (error) {
             console.error('Error al crear thumbnail:', error);
             // Retornar una miniatura en blanco en caso de error
