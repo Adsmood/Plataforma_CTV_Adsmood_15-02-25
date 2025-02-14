@@ -122,15 +122,16 @@ const BackgroundUploader: React.FC = () => {
       
       setOpen(false);
     } catch (error) {
-      console.error('Error al procesar el fondo:', error);
-      setError(
-        error instanceof Error 
-          ? error.message 
-          : 'Error desconocido al subir el archivo. Por favor, intenta de nuevo.'
-      );
+      console.error('Error al procesar el archivo:', error);
+      setError(error instanceof Error ? error.message : 'Error desconocido');
     } finally {
       setUploading(false);
     }
+  };
+
+  const handleUploadError = (error: Error) => {
+    console.error('Error en la subida:', error);
+    setError(error.message);
   };
 
   const handleStyleChange = (key: 'scale' | 'position', value: any) => {
@@ -227,6 +228,7 @@ const BackgroundUploader: React.FC = () => {
         <Box sx={{ p: 2, height: 300 }} role="dialog" aria-modal="true">
           <FileUploader
             onFileAccepted={handleFileAccepted}
+            onError={handleUploadError}
             accept={{
               'image/*': ['.png', '.jpg', '.jpeg'],
               'video/*': ['.mp4', '.webm', '.ogg'],

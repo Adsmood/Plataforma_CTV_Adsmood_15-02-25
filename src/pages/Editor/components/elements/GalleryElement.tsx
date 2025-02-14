@@ -1,17 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { Box, IconButton, Stack, Dialog, Typography, Grid } from '@mui/material';
+import React, { useState } from 'react';
+import { Box, IconButton, Stack, Dialog, Typography, Alert } from '@mui/material';
 import {
   Edit as EditIcon,
   Delete as DeleteIcon,
-  PlayArrow as PlayIcon,
+  ChevronLeft,
+  ChevronRight,
 } from '@mui/icons-material';
 import FileUploader from '../../../../components/common/FileUploader';
 import { useEditorStore } from '../../../../stores/editorStore';
 
 interface Media {
-  id: string;
-  url: string;
   type: 'image' | 'video';
+  url: string;
 }
 
 interface GalleryElementProps {
@@ -29,110 +29,82 @@ interface GalleryElementProps {
 
 const GalleryElement: React.FC<GalleryElementProps> = ({ data, isSelected, elementId }) => {
   const [open, setOpen] = useState(false);
-  const [focusedIndex, setFocusedIndex] = useState<number | null>(null);
+  const [error, setError] = useState<string | null>(null);
   const updateElement = useEditorStore((state) => state.updateElement);
-
   const currentIndex = data.currentIndex || 0;
-  const currentMedia = data.media?.[currentIndex];
+  const hasMedia = data.media.length > 0;
 
   const handleFileAccepted = async (file: File) => {
     try {
+      setError(null);
       const url = URL.createObjectURL(file);
-      if (elementId) {
-        const currentMedia = data.media || [];
-        const currentStyle = data.style || { scale: 1, position: { x: 50, y: 50 } };
-        
-        const newMedia: Media = {
-          id: Math.random().toString(36).substr(2, 9),
-          url,
-          type: file.type.startsWith('video/') ? 'video' : 'image',
-        };
+      const type = file.type.startsWith('video/') ? 'video' : 'image';
 
+      if (elementId) {
         updateElement(elementId, {
           content: {
-            media: [...currentMedia, newMedia],
-            currentIndex: currentMedia.length,
-            style: currentStyle,
+            ...data,
+            media: [...data.media, { type, url }],
+            style: data.style || { scale: 1, position: { x: 50, y: 50 } },
           },
         });
       }
     } catch (error) {
       console.error('Error al procesar el archivo:', error);
+      setError(error instanceof Error ? error.message : 'Error desconocido');
     }
   };
 
-  const handleDeleteMedia = (mediaId: string) => {
-    if (elementId) {
-      const newMedia = (data.media || []).filter(m => m.id !== mediaId);
-      const newIndex = Math.min(currentIndex, newMedia.length - 1);
-      updateElement(elementId, {
-        content: {
-          ...data,
-          media: newMedia,
-          currentIndex: newIndex >= 0 ? newIndex : 0,
-        },
-      });
-    }
+  const handleUploadError = (error: Error) => {
+    console.error('Error en la subida:', error);
+    setError(error.message);
   };
 
-  const handleMediaSelect = (index: number) => {
-    if (elementId) {
-      updateElement(elementId, {
-        content: {
-          ...data,
-          currentIndex: index,
-        },
-      });
-    }
+  const handleDeleteMedia = (index: number) => {
+    if (!elementId) return;
+
+    const newMedia = [...data.media];
+    newMedia.splice(index, 1);
+
+    updateElement(elementId, {
+      content: {
+        ...data,
+        media: newMedia,
+        currentIndex: Math.min(currentIndex, newMedia.length - 1),
+      },
+    });
+  };
+
+  const handleNavigate = (direction: 'prev' | 'next') => {
+    if (!elementId || !hasMedia) return;
+
+    const newIndex = direction === 'prev'
+      ? (currentIndex - 1 + data.media.length) % data.media.length
+      : (currentIndex + 1) % data.media.length;
+
+    updateElement(elementId, {
+      content: {
+        ...data,
+        currentIndex: newIndex,
+      },
+    });
   };
 
   const style = data.style || { scale: 1, position: { x: 50, y: 50 } };
-  const hasMedia = Array.isArray(data.media) && data.media.length > 0;
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (!isSelected || !data.media?.length) return;
-
-      const currentFocus = focusedIndex ?? data.currentIndex ?? 0;
-      let newIndex = currentFocus;
-
-      switch (e.key) {
-        case 'ArrowLeft':
-          newIndex = Math.max(0, currentFocus - 1);
-          break;
-        case 'ArrowRight':
-          newIndex = Math.min(data.media.length - 1, currentFocus + 1);
-          break;
-        case 'Enter':
-        case ' ':
-          if (focusedIndex !== null) {
-            handleMediaSelect(focusedIndex);
-            e.preventDefault();
-          }
-          break;
-        default:
-          return;
-      }
-
-      if (newIndex !== currentFocus) {
-        setFocusedIndex(newIndex);
-        e.preventDefault();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isSelected, data.media, focusedIndex, data.currentIndex]);
 
   return (
     <Box
+      tabIndex={isSelected ? 0 : -1}
       sx={{
         width: '100%',
         height: '100%',
         position: 'relative',
         overflow: 'hidden',
         borderRadius: 1,
-        bgcolor: hasMedia ? 'transparent' : 'action.hover',
+        outline: 'none',
+        '&:focus': {
+          outline: isSelected ? '2px solid #fff' : 'none',
+        },
       }}
     >
       <Box
@@ -140,150 +112,93 @@ const GalleryElement: React.FC<GalleryElementProps> = ({ data, isSelected, eleme
           width: '100%',
           height: '100%',
           position: 'relative',
-          transform: `scale(${style.scale}) translate(${style.position.x - 50}%, ${style.position.y - 50}%)`,
-          transformOrigin: 'center',
-          display: 'flex',
-          flexDirection: 'column',
-          gap: 1,
         }}
       >
         {hasMedia ? (
-          <>
-            {/* Contenedor principal */}
+          data.media[currentIndex].type === 'video' ? (
             <Box
+              component="video"
+              src={data.media[currentIndex].url}
+              autoPlay
+              loop
+              muted
+              playsInline
               sx={{
                 width: '100%',
-                flex: 1,
-                position: 'relative',
-                bgcolor: 'background.paper',
-                borderRadius: 1,
-                overflow: 'hidden',
+                height: '100%',
+                objectFit: 'contain',
+                transform: `scale(${style.scale}) translate(${style.position.x - 50}%, ${style.position.y - 50}%)`,
+                transformOrigin: 'center',
+                bgcolor: 'transparent',
               }}
-            >
-              {currentMedia?.type === 'video' ? (
-                <Box
-                  component="video"
-                  src={currentMedia.url}
-                  sx={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
-                  }}
-                  autoPlay
-                  loop
-                  playsInline
-                  key={currentMedia.id}
-                />
-              ) : (
-                <Box
-                  component="img"
-                  src={currentMedia?.url}
-                  sx={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'contain',
-                  }}
-                />
-              )}
-            </Box>
-
-            {/* Grid de thumbnails */}
+            />
+          ) : (
             <Box
+              component="img"
+              src={data.media[currentIndex].url}
               sx={{
                 width: '100%',
-                height: '20%',
-                minHeight: 60,
+                height: '100%',
+                objectFit: 'contain',
+                transform: `scale(${style.scale}) translate(${style.position.x - 50}%, ${style.position.y - 50}%)`,
+                transformOrigin: 'center',
+                bgcolor: 'transparent',
               }}
-            >
-              <Grid container spacing={0.5} columns={3}>
-                {data.media.map((media, index) => (
-                  <Grid item xs={1} key={media.id}>
-                    <Box
-                      tabIndex={isSelected ? 0 : -1}
-                      onFocus={() => setFocusedIndex(index)}
-                      onBlur={() => setFocusedIndex(null)}
-                      sx={{
-                        position: 'relative',
-                        width: '100%',
-                        paddingTop: '56.25%',
-                        cursor: 'pointer',
-                        border: index === currentIndex ? '2px solid' : 'none',
-                        borderColor: 'primary.main',
-                        borderRadius: 1,
-                        overflow: 'hidden',
-                        m: 0.25,
-                        outline: focusedIndex === index ? '2px solid #fff' : 'none',
-                        '&:focus': {
-                          outline: '2px solid #fff',
-                        },
-                      }}
-                      onClick={() => handleMediaSelect(index)}
-                    >
-                      {media.type === 'video' ? (
-                        <Box
-                          component="video"
-                          src={media.url}
-                          sx={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover',
-                          }}
-                          muted
-                          playsInline
-                        />
-                      ) : (
-                        <Box
-                          component="img"
-                          src={media.url}
-                          sx={{
-                            position: 'absolute',
-                            top: 0,
-                            left: 0,
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover',
-                          }}
-                        />
-                      )}
-                      {media.type === 'video' && (
-                        <Box
-                          sx={{
-                            position: 'absolute',
-                            top: '50%',
-                            left: '50%',
-                            transform: 'translate(-50%, -50%)',
-                            color: 'white',
-                            bgcolor: 'rgba(0,0,0,0.4)',
-                            borderRadius: '50%',
-                            p: 0.5,
-                          }}
-                        >
-                          <PlayIcon sx={{ fontSize: 20 }} />
-                        </Box>
-                      )}
-                    </Box>
-                  </Grid>
-                ))}
-              </Grid>
-            </Box>
-          </>
+            />
+          )
         ) : (
           <Box
             sx={{
               width: '100%',
               height: '100%',
+              bgcolor: 'action.hover',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               color: 'text.secondary',
+              transition: 'background-color 0.2s',
+              '&:hover': {
+                bgcolor: 'action.selected',
+              },
             }}
           >
             <EditIcon sx={{ mr: 1 }} />
             Haz clic para añadir imágenes o videos
           </Box>
+        )}
+
+        {hasMedia && data.media.length > 1 && (
+          <>
+            <IconButton
+              onClick={() => handleNavigate('prev')}
+              sx={{
+                position: 'absolute',
+                left: 8,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                bgcolor: 'background.paper',
+                '&:hover': { bgcolor: 'action.hover' },
+                zIndex: 2,
+              }}
+            >
+              <ChevronLeft />
+            </IconButton>
+
+            <IconButton
+              onClick={() => handleNavigate('next')}
+              sx={{
+                position: 'absolute',
+                right: 8,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                bgcolor: 'background.paper',
+                '&:hover': { bgcolor: 'action.hover' },
+                zIndex: 2,
+              }}
+            >
+              <ChevronRight />
+            </IconButton>
+          </>
         )}
       </Box>
 
@@ -307,19 +222,19 @@ const GalleryElement: React.FC<GalleryElementProps> = ({ data, isSelected, eleme
 
       <Dialog
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={() => {
+          setOpen(false);
+          setError(null);
+        }}
         maxWidth="sm"
         fullWidth
       >
         <Box sx={{ p: 2 }}>
-          <Typography variant="subtitle1" sx={{ mb: 2 }}>
-            Gestionar galería de medios
-          </Typography>
-
           <Stack spacing={2}>
             <Box sx={{ height: 200 }}>
               <FileUploader
                 onFileAccepted={handleFileAccepted}
+                onError={handleUploadError}
                 accept={{
                   'image/*': ['.png', '.jpg', '.jpeg'],
                   'video/*': ['.mp4', '.webm', '.ogg'],
@@ -327,61 +242,72 @@ const GalleryElement: React.FC<GalleryElementProps> = ({ data, isSelected, eleme
                 maxSize={52428800} // 50MB
                 title="Arrastra imágenes o videos aquí, o haz clic para seleccionar"
                 icon={<EditIcon />}
+                error={error}
               />
             </Box>
 
-            {hasMedia && (
-              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
-                {data.media.map((media) => (
-                  <Box
-                    key={media.id}
-                    sx={{
-                      position: 'relative',
-                      width: 120,
-                      height: 67.5, // 16:9 aspect ratio
-                    }}
-                  >
-                    {media.type === 'video' ? (
-                      <Box
-                        component="video"
-                        src={media.url}
-                        sx={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                          borderRadius: 1,
-                        }}
-                      />
-                    ) : (
-                      <Box
-                        component="img"
-                        src={media.url}
-                        sx={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                          borderRadius: 1,
-                        }}
-                      />
-                    )}
-                    <IconButton
-                      size="small"
-                      onClick={() => handleDeleteMedia(media.id)}
+            {data.media.length > 0 && (
+              <>
+                <Typography variant="subtitle1" gutterBottom>
+                  Contenido de la galería
+                </Typography>
+                <Box
+                  sx={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fill, minmax(100px, 1fr))',
+                    gap: 1,
+                  }}
+                >
+                  {data.media.map((item, index) => (
+                    <Box
+                      key={index}
                       sx={{
-                        position: 'absolute',
-                        top: -8,
-                        right: -8,
-                        bgcolor: 'background.paper',
-                        '&:hover': {
-                          bgcolor: 'action.hover',
-                        },
+                        position: 'relative',
+                        aspectRatio: '1',
+                        borderRadius: 1,
+                        overflow: 'hidden',
                       }}
                     >
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </Box>
-                ))}
-              </Box>
+                      {item.type === 'video' ? (
+                        <Box
+                          component="video"
+                          src={item.url}
+                          sx={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                          }}
+                        />
+                      ) : (
+                        <Box
+                          component="img"
+                          src={item.url}
+                          sx={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: 'cover',
+                          }}
+                        />
+                      )}
+                      <IconButton
+                        size="small"
+                        onClick={() => handleDeleteMedia(index)}
+                        sx={{
+                          position: 'absolute',
+                          right: 4,
+                          top: 4,
+                          bgcolor: 'background.paper',
+                          '&:hover': {
+                            bgcolor: 'action.hover',
+                          },
+                        }}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </Box>
+                  ))}
+                </Box>
+              </>
             )}
           </Stack>
         </Box>

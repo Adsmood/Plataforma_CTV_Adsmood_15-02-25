@@ -25,8 +25,13 @@
     "paths": {
       "@/*": ["./src/*"]
     },
-    "types": ["vite/client"]
+
+    /* Type Checking */
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true
   },
   "include": ["src/**/*.ts", "src/**/*.tsx", "src/**/*.d.ts"],
+  "exclude": ["src/modules/**/*", "node_modules", "dist"],
   "references": [{ "path": "./tsconfig.node.json" }]
 } 

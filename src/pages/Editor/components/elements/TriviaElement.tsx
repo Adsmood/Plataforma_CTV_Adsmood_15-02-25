@@ -10,6 +10,7 @@ import {
   Radio,
   RadioGroup,
   FormControlLabel,
+  Alert,
 } from '@mui/material';
 import {
   Edit as EditIcon,
@@ -59,6 +60,7 @@ const defaultStyle = {
 
 const TriviaElement: React.FC<TriviaElementProps> = ({ data, isSelected, elementId }) => {
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [focusedOptionIndex, setFocusedOptionIndex] = useState<number>(-1);
   const updateElement = useEditorStore((state) => state.updateElement);
 
@@ -116,6 +118,7 @@ const TriviaElement: React.FC<TriviaElementProps> = ({ data, isSelected, element
 
   const handleQuestionImageUpload = async (file: File) => {
     try {
+      setError(null);
       const imageUrl = URL.createObjectURL(file);
       if (elementId) {
         updateElement(elementId, {
@@ -127,11 +130,18 @@ const TriviaElement: React.FC<TriviaElementProps> = ({ data, isSelected, element
       }
     } catch (error) {
       console.error('Error al procesar la imagen:', error);
+      setError(error instanceof Error ? error.message : 'Error desconocido');
     }
+  };
+
+  const handleQuestionImageError = (error: Error) => {
+    console.error('Error en la subida de la imagen de pregunta:', error);
+    setError(error.message);
   };
 
   const handleOptionImageUpload = async (file: File) => {
     try {
+      setError(null);
       const imageUrl = URL.createObjectURL(file);
       const newOption: TriviaOption = {
         id: Math.random().toString(36).substr(2, 9),
@@ -149,7 +159,13 @@ const TriviaElement: React.FC<TriviaElementProps> = ({ data, isSelected, element
       }
     } catch (error) {
       console.error('Error al procesar la imagen:', error);
+      setError(error instanceof Error ? error.message : 'Error desconocido');
     }
+  };
+
+  const handleOptionImageError = (error: Error) => {
+    console.error('Error en la subida de la imagen de opción:', error);
+    setError(error.message);
   };
 
   const handleDeleteOption = (optionId: string) => {
@@ -222,6 +238,7 @@ const TriviaElement: React.FC<TriviaElementProps> = ({ data, isSelected, element
 
   const handleFeedbackImageUpload = async (file: File, type: 'correct' | 'incorrect') => {
     try {
+      setError(null);
       const imageUrl = URL.createObjectURL(file);
       if (elementId) {
         updateElement(elementId, {
@@ -236,7 +253,13 @@ const TriviaElement: React.FC<TriviaElementProps> = ({ data, isSelected, element
       }
     } catch (error) {
       console.error('Error al procesar la imagen:', error);
+      setError(error instanceof Error ? error.message : 'Error desconocido');
     }
+  };
+
+  const handleFeedbackImageError = (error: Error) => {
+    console.error('Error en la subida de la imagen de feedback:', error);
+    setError(error.message);
   };
 
   const handleDeleteFeedbackImage = (type: 'correct' | 'incorrect') => {
@@ -259,13 +282,14 @@ const TriviaElement: React.FC<TriviaElementProps> = ({ data, isSelected, element
       sx={{
         width: '100%',
         height: '100%',
-        bgcolor: 'transparent',
-        borderRadius: 1,
-        p: 2,
-        overflow: 'hidden',
         position: 'relative',
-        transform: `scale(${style.scale})`,
-        transformOrigin: 'center',
+        overflow: 'hidden',
+        borderRadius: 1,
+        bgcolor: style.backgroundColor,
+        outline: 'none',
+        '&:focus': {
+          outline: isSelected ? '2px solid #fff' : 'none',
+        },
       }}
     >
       {data.questionImage ? (
@@ -425,16 +449,25 @@ const TriviaElement: React.FC<TriviaElementProps> = ({ data, isSelected, element
 
       <Dialog
         open={open}
-        onClose={() => setOpen(false)}
-        maxWidth="sm"
+        onClose={() => {
+          setOpen(false);
+          setError(null);
+        }}
+        maxWidth="md"
         fullWidth
       >
         <Box sx={{ p: 2 }}>
-          <Typography variant="h6" sx={{ mb: 2 }}>
-            Configurar Trivia
-          </Typography>
+          <Stack spacing={2}>
+            <Typography variant="h6" gutterBottom>
+              Configurar Trivia
+            </Typography>
 
-          <Stack spacing={3}>
+            {error && (
+              <Alert severity="error" onClose={() => setError(null)}>
+                {error}
+              </Alert>
+            )}
+
             <Box>
               <Typography variant="subtitle1" gutterBottom>
                 Imagen de la pregunta
@@ -442,12 +475,14 @@ const TriviaElement: React.FC<TriviaElementProps> = ({ data, isSelected, element
               <Box sx={{ height: 200 }}>
                 <FileUploader
                   onFileAccepted={handleQuestionImageUpload}
+                  onError={handleQuestionImageError}
                   accept={{
                     'image/*': ['.png', '.jpg', '.jpeg'],
                   }}
                   maxSize={5242880} // 5MB
-                  title="Arrastra la imagen de la pregunta aquí"
+                  title="Arrastra una imagen aquí, o haz clic para seleccionar"
                   icon={<EditIcon />}
+                  error={error}
                 />
               </Box>
             </Box>
@@ -473,12 +508,14 @@ const TriviaElement: React.FC<TriviaElementProps> = ({ data, isSelected, element
               <Box sx={{ height: 200 }}>
                 <FileUploader
                   onFileAccepted={handleOptionImageUpload}
+                  onError={handleOptionImageError}
                   accept={{
                     'image/*': ['.png', '.jpg', '.jpeg'],
                   }}
                   maxSize={5242880} // 5MB
                   title="Arrastra las imágenes de las opciones aquí"
                   icon={<EditIcon />}
+                  error={error}
                 />
               </Box>
 
@@ -529,111 +566,44 @@ const TriviaElement: React.FC<TriviaElementProps> = ({ data, isSelected, element
 
             <Box>
               <Typography variant="subtitle1" gutterBottom>
-                Imágenes de Feedback
+                Imágenes de feedback
               </Typography>
-              <Stack spacing={2}>
-                <Box>
-                  <Typography variant="body2" gutterBottom>
-                    Imagen para respuesta correcta
+              <Stack direction="row" spacing={2}>
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Respuesta correcta
                   </Typography>
                   <Box sx={{ height: 150 }}>
                     <FileUploader
                       onFileAccepted={(file) => handleFeedbackImageUpload(file, 'correct')}
+                      onError={handleFeedbackImageError}
                       accept={{
                         'image/*': ['.png', '.jpg', '.jpeg'],
                       }}
                       maxSize={5242880} // 5MB
-                      title="Arrastra la imagen para respuesta correcta"
+                      title="Imagen para respuesta correcta"
                       icon={<EditIcon />}
+                      error={error}
                     />
                   </Box>
-                  {data.feedbackImages?.correct && (
-                    <Box
-                      sx={{
-                        mt: 1,
-                        position: 'relative',
-                        width: '100%',
-                        height: 100,
-                      }}
-                    >
-                      <Box
-                        component="img"
-                        src={data.feedbackImages.correct}
-                        sx={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'contain',
-                        }}
-                      />
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDeleteFeedbackImage('correct')}
-                        sx={{
-                          position: 'absolute',
-                          top: -8,
-                          right: -8,
-                          bgcolor: 'background.paper',
-                          '&:hover': {
-                            bgcolor: 'action.hover',
-                          },
-                        }}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
-                  )}
                 </Box>
-
-                <Box>
-                  <Typography variant="body2" gutterBottom>
-                    Imagen para respuesta incorrecta
+                <Box sx={{ flex: 1 }}>
+                  <Typography variant="subtitle2" gutterBottom>
+                    Respuesta incorrecta
                   </Typography>
                   <Box sx={{ height: 150 }}>
                     <FileUploader
                       onFileAccepted={(file) => handleFeedbackImageUpload(file, 'incorrect')}
+                      onError={handleFeedbackImageError}
                       accept={{
                         'image/*': ['.png', '.jpg', '.jpeg'],
                       }}
                       maxSize={5242880} // 5MB
-                      title="Arrastra la imagen para respuesta incorrecta"
+                      title="Imagen para respuesta incorrecta"
                       icon={<EditIcon />}
+                      error={error}
                     />
                   </Box>
-                  {data.feedbackImages?.incorrect && (
-                    <Box
-                      sx={{
-                        mt: 1,
-                        position: 'relative',
-                        width: '100%',
-                        height: 100,
-                      }}
-                    >
-                      <Box
-                        component="img"
-                        src={data.feedbackImages.incorrect}
-                        sx={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'contain',
-                        }}
-                      />
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDeleteFeedbackImage('incorrect')}
-                        sx={{
-                          position: 'absolute',
-                          top: -8,
-                          right: -8,
-                          bgcolor: 'background.paper',
-                          '&:hover': {
-                            bgcolor: 'action.hover',
-                          },
-                        }}
-                      >
-                        <DeleteIcon fontSize="small" />
-                      </IconButton>
-                    </Box>
-                  )}
                 </Box>
               </Stack>
             </Box>

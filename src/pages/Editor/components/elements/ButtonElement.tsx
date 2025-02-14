@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Box, TextField, Dialog, IconButton, Stack } from '@mui/material';
+import { Box, TextField, Dialog, IconButton, Stack, Alert } from '@mui/material';
 import { Edit as EditIcon } from '@mui/icons-material';
 import FileUploader from '../../../../components/common/FileUploader';
 import { useEditorStore } from '../../../../stores/editorStore';
@@ -19,6 +19,7 @@ interface ButtonElementProps {
 
 const ButtonElement: React.FC<ButtonElementProps> = ({ data, isSelected, elementId }) => {
   const [open, setOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const updateElement = useEditorStore((state) => state.updateElement);
 
   useEffect(() => {
@@ -37,6 +38,7 @@ const ButtonElement: React.FC<ButtonElementProps> = ({ data, isSelected, element
 
   const handleFileAccepted = async (file: File) => {
     try {
+      setError(null);
       const imageUrl = URL.createObjectURL(file);
       if (elementId) {
         updateElement(elementId, {
@@ -49,7 +51,13 @@ const ButtonElement: React.FC<ButtonElementProps> = ({ data, isSelected, element
       }
     } catch (error) {
       console.error('Error al procesar la imagen:', error);
+      setError(error instanceof Error ? error.message : 'Error desconocido');
     }
+  };
+
+  const handleUploadError = (error: Error) => {
+    console.error('Error en la subida:', error);
+    setError(error.message);
   };
 
   const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -146,7 +154,10 @@ const ButtonElement: React.FC<ButtonElementProps> = ({ data, isSelected, element
 
       <Dialog
         open={open}
-        onClose={() => setOpen(false)}
+        onClose={() => {
+          setOpen(false);
+          setError(null);
+        }}
         maxWidth="sm"
         fullWidth
         onClick={(e) => e.stopPropagation()}
@@ -156,12 +167,14 @@ const ButtonElement: React.FC<ButtonElementProps> = ({ data, isSelected, element
             <Box sx={{ height: 200 }}>
               <FileUploader
                 onFileAccepted={handleFileAccepted}
+                onError={handleUploadError}
                 accept={{
                   'image/*': ['.png', '.jpg', '.jpeg'],
                 }}
                 maxSize={5242880} // 5MB
                 title="Arrastra una imagen PNG aquí, o haz clic para seleccionar"
                 icon={<EditIcon />}
+                error={error}
               />
             </Box>
 
@@ -174,6 +187,8 @@ const ButtonElement: React.FC<ButtonElementProps> = ({ data, isSelected, element
               variant="outlined"
               size="small"
               type="url"
+              error={Boolean(data.url && !data.url.startsWith('http'))}
+              helperText={data.url && !data.url.startsWith('http') ? 'La URL debe comenzar con http:// o https://' : ''}
             />
           </Stack>
         </Box>

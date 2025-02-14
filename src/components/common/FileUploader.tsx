@@ -1,9 +1,10 @@
 import React from 'react';
-import { useDropzone } from 'react-dropzone';
+import { useDropzone, FileRejection } from 'react-dropzone';
 import { Box, Typography, Alert } from '@mui/material';
 
 interface FileUploaderProps {
   onFileAccepted: (file: File) => void;
+  onError?: (error: Error) => void;
   accept?: Record<string, string[]>;
   maxSize?: number;
   title?: string;
@@ -12,8 +13,9 @@ interface FileUploaderProps {
   error?: string | null;
 }
 
-const FileUploader: React.FC<FileUploaderProps> = ({
+export const FileUploader: React.FC<FileUploaderProps> = ({
   onFileAccepted,
+  onError,
   accept,
   maxSize,
   title = 'Arrastra un archivo aquí o haz clic para seleccionar',
@@ -43,8 +45,10 @@ const FileUploader: React.FC<FileUploaderProps> = ({
     maxSize,
     disabled,
     multiple: false,
-    onError: (error) => {
-      console.error('Error en Dropzone:', error);
+    onDropRejected: (fileRejections: FileRejection[]) => {
+      if (onError && fileRejections.length > 0) {
+        onError(new Error(fileRejections[0].errors[0].message));
+      }
     },
   });
 
