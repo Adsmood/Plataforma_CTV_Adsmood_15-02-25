@@ -4,7 +4,7 @@ services:
     name: ctv-render-13-02
     env: static
     region: global
-    buildCommand: npm ci && npm run build
+    buildCommand: cd frontend && npm ci && npm run build
     staticPublishPath: frontend/dist
     workingDirectory: frontend
     headers:
@@ -79,7 +79,7 @@ services:
     name: adsmood-ctv-api
     env: node
     region: oregon
-    buildCommand: npm install && npx prisma generate && npm run build
+    buildCommand: npm install -g prisma && npm install && npx prisma generate && npm run build
     startCommand: node dist/main
     workingDirectory: api
     healthCheckPath: /health
