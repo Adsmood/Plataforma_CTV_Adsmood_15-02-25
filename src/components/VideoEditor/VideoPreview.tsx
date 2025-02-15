@@ -66,7 +66,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
     setMuted(!muted);
   };
 
-  const handleSeekChange = (_: Event, newValue: number | number[]) => {
+  const handleSeekChange = (_: any, newValue: number | number[]) => {
     setPlayed(newValue as number);
   };
 
@@ -74,7 +74,7 @@ const VideoPreview: React.FC<VideoPreviewProps> = ({
     setSeeking(true);
   };
 
-  const handleSeekMouseUp = (_: Event, newValue: number | number[]) => {
+  const handleSeekMouseUp = (_: any, newValue: number | number[]) => {
     setSeeking(false);
     if (playerRef.current) {
       playerRef.current.seekTo(newValue as number);

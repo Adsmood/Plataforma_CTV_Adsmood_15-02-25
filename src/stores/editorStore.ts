@@ -2,6 +2,8 @@ import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { KeyframeTrack, TimelineElement, Position, Size, ElementType } from '../types/timeline';
 
+export type { ElementType };
+
 interface Background {
   url: string;
   type: 'image' | 'video';

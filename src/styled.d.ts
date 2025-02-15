@@ -85,6 +85,8 @@ declare module 'styled-components' {
                 dark: string;
                 default: string;
                 paper: string;
+                light: string;
+                white: string;
             };
             primary: {
                 main: string;
@@ -94,6 +96,9 @@ declare module 'styled-components' {
             text: {
                 primary: string;
                 secondary: string;
+            };
+            border: {
+                main: string;
             };
         };
     }

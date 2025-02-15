@@ -83,7 +83,7 @@ interface TimelineProps {
   duration: number;
   currentTime: number;
   onTimeUpdate: (time: number) => void;
-  onElementChange: (element: TimelineElement) => void;
+  onElementChange: (id: string, updates: Partial<TimelineElement>) => void;
   onElementSelect: (id: string | null) => void;
   selectedElementId: string | null;
 }
@@ -158,7 +158,7 @@ const Timeline: React.FC<TimelineProps> = ({
       }
     }
 
-    onElementChange(updatedElement);
+    onElementChange(element.id, updatedElement);
   }, [dragging, elements, scale, duration, onElementChange]);
 
   const handleMouseUp = useCallback(() => {
