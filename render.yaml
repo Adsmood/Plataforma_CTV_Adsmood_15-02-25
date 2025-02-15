@@ -16,8 +16,8 @@ services:
   - type: web
     name: adsmood-ctv-assets
     env: node
-    buildCommand: npm install
-    startCommand: node server.js
+    buildCommand: cd assets && npm install
+    startCommand: cd assets && node dist/server.js
     pullRequestPreviewsEnabled: true
     envVars:
       - key: PORT
@@ -30,15 +30,35 @@ services:
   # API Backend
   - type: web
     name: adsmood-ctv-api
-    env: node
-    buildCommand: cd api && npm install && npm run build
-    startCommand: cd api && npm run start:prod
+    env: docker
+    dockerfilePath: ./api/Dockerfile
+    dockerContext: ./api
     pullRequestPreviewsEnabled: true
     envVars:
       - key: PORT
         value: 3001
       - key: NODE_ENV
         value: production
+      - key: DB_HOST
+        fromDatabase:
+          name: adsmood-ctv-db
+          property: host
+      - key: DB_PORT
+        fromDatabase:
+          name: adsmood-ctv-db
+          property: port
+      - key: DB_NAME
+        fromDatabase:
+          name: adsmood-ctv-db
+          property: database
+      - key: DB_USER
+        fromDatabase:
+          name: adsmood-ctv-db
+          property: user
+      - key: DB_PASSWORD
+        fromDatabase:
+          name: adsmood-ctv-db
+          property: password
       - key: DB_SSL
         value: true
       - key: ASSETS_URL

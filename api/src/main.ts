@@ -2,18 +2,17 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
+import * as express from 'express';
+import { join } from 'path';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
   // Configuración de CORS
   app.enableCors({
-    origin: [
-      'https://ctv-render-13-02.onrender.com',
-      'http://localhost:3000'
-    ],
+    origin: process.env.ALLOWED_ORIGINS?.split(',') || [],
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
+    credentials: true,
   });
 
   // Configuración de Swagger
@@ -31,6 +30,13 @@ async function bootstrap() {
     whitelist: true,
     transform: true,
   }));
+
+  // Configurar límites de tamaño de archivo
+  app.use(express.json({ limit: '50mb' }));
+  app.use(express.urlencoded({ limit: '50mb', extended: true }));
+
+  // Servir archivos estáticos
+  app.use('/uploads', express.static(join(__dirname, '..', 'uploads')));
 
   // Puerto dinámico para Render.com
   const port = process.env.PORT || 3001;

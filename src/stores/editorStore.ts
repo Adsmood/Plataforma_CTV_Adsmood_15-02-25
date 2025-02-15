@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 
-export type ElementType = 'video' | 'button' | 'carousel' | 'gallery' | 'trivia' | 'qr' | 'choice';
+export type ElementType = 'video' | 'button' | 'carousel' | 'gallery' | 'trivia' | 'qr' | 'choice' | 'select';
 
 export interface Position {
   x: number;

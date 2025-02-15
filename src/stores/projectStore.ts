@@ -131,7 +131,7 @@ const processAssets = async (obj: any): Promise<any> => {
   return obj;
 };
 
-const useProjectStore = create<ProjectState>()(
+export const useProjectStore = create<ProjectState>()(
   devtools(
     persist(
       (set, get) => ({
@@ -502,8 +502,6 @@ const useProjectStore = create<ProjectState>()(
     )
   )
 );
-
-export default useProjectStore;
 
 // Inicializar el store cuando el módulo se carga
 if (typeof window !== 'undefined') {

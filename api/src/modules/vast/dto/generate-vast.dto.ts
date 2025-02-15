@@ -1,19 +1,46 @@
-import { IsOptional, IsString, IsEnum } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsUrl, IsObject, ValidateNested, IsBoolean } from 'class-validator';
 import { ApiProperty } from '@nestjs/swagger';
+import { Type } from 'class-transformer';
 
 export enum PlatformType {
   ROKU = 'roku',
-  FIRE_TV = 'fire_tv',
-  APPLE_TV = 'apple_tv',
-  ANDROID_TV = 'android_tv',
-  SAMSUNG_TV = 'samsung_tv',
-  LG_TV = 'lg_tv',
+  FIRE_TV = 'fireTV',
+  APPLE_TV = 'appleTV',
+  ANDROID_TV = 'androidTV',
+  SAMSUNG_TV = 'samsungTV',
+  LG_TV = 'lgTV',
   VIZIO = 'vizio',
   HULU = 'hulu',
-  YOUTUBE_TV = 'youtube_tv',
-  PLUTO_TV = 'pluto_tv',
+  YOUTUBE_TV = 'youtubeTV',
+  PLUTO_TV = 'plutoTV',
   PEACOCK = 'peacock',
   OTHER = 'other',
+}
+
+export class InteractiveDataDto {
+  @ApiProperty({
+    description: 'URL del overlay interactivo',
+    required: false
+  })
+  @IsUrl()
+  @IsOptional()
+  overlayUrl?: string;
+
+  @ApiProperty({
+    description: 'URL de destino al hacer clic',
+    required: true
+  })
+  @IsUrl()
+  clickThroughUrl!: string;
+
+  @ApiProperty({
+    description: 'Parámetros personalizados para la interactividad',
+    required: false,
+    type: 'object'
+  })
+  @IsObject()
+  @IsOptional()
+  customParams?: Record<string, string>;
 }
 
 export class GenerateVastDto {
@@ -41,4 +68,23 @@ export class GenerateVastDto {
   @IsString()
   @IsOptional()
   dv360CreativeId?: string;
+
+  @ApiProperty({
+    description: 'Datos de interactividad',
+    required: false,
+    type: InteractiveDataDto
+  })
+  @ValidateNested()
+  @Type(() => InteractiveDataDto)
+  @IsOptional()
+  interactiveData?: InteractiveDataDto;
+
+  @ApiProperty({
+    description: 'Habilitar verificación de terceros',
+    required: false,
+    default: false
+  })
+  @IsBoolean()
+  @IsOptional()
+  enableThirdPartyVerification?: boolean;
 } 

@@ -1,16 +1,21 @@
 import { Module } from '@nestjs/common';
-import { AnalyticsService } from './analytics.service';
-import { AnalyticsController } from './analytics.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { Event } from './entities/event.entity';
-import { AdStats } from './entities/ad-stats.entity';
+import { AnalyticsController } from './analytics.controller';
+import { AnalyticsService } from './analytics.service';
+import { Impression } from '../tracking/entities/impression.entity';
+import { VideoEvent } from '../tracking/entities/video-event.entity';
+import { Interaction } from '../tracking/entities/interaction.entity';
 
 @Module({
-  imports: [
-    TypeOrmModule.forFeature([Event, AdStats]),
-  ],
-  controllers: [AnalyticsController],
-  providers: [AnalyticsService],
-  exports: [AnalyticsService],
+    imports: [
+        TypeOrmModule.forFeature([
+            Impression,
+            VideoEvent,
+            Interaction
+        ])
+    ],
+    controllers: [AnalyticsController],
+    providers: [AnalyticsService],
+    exports: [AnalyticsService]
 })
 export class AnalyticsModule {} 

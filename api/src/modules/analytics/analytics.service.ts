@@ -1,155 +1,198 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between } from 'typeorm';
-import { Event } from './entities/event.entity';
-import { AdStats } from './entities/ad-stats.entity';
+import { Impression } from '../tracking/entities/impression.entity';
+import { VideoEvent } from '../tracking/entities/video-event.entity';
+import { Interaction } from '../tracking/entities/interaction.entity';
+
+interface DateRange {
+    startDate?: Date;
+    endDate?: Date;
+}
 
 @Injectable()
 export class AnalyticsService {
+    private readonly logger = new Logger(AnalyticsService.name);
+
   constructor(
-    @InjectRepository(Event)
-    private readonly eventRepository: Repository<Event>,
-    @InjectRepository(AdStats)
-    private readonly adStatsRepository: Repository<AdStats>,
-  ) {}
+        @InjectRepository(Impression)
+        private readonly impressionRepository: Repository<Impression>,
+        @InjectRepository(VideoEvent)
+        private readonly eventRepository: Repository<VideoEvent>,
+        @InjectRepository(Interaction)
+        private readonly interactionRepository: Repository<Interaction>
+    ) {}
 
-  async recordEvent(eventData: any): Promise<void> {
-    // Crear el evento
-    const event = this.eventRepository.create({
-      ...eventData,
-      timestamp: new Date(eventData.timestamp),
-    });
-    await this.eventRepository.save(event);
+    async getStats(creativeId: string, dateRange?: DateRange) {
+        const query = this.impressionRepository
+            .createQueryBuilder('impression')
+            .where('impression.creativeId = :creativeId', { creativeId });
 
-    // Actualizar estadísticas
-    await this.updateStats(eventData.adId, eventData.event, eventData.platform);
-  }
+        if (dateRange?.startDate) {
+            query.andWhere('impression.timestamp >= :startDate', { startDate: dateRange.startDate });
+        }
+        if (dateRange?.endDate) {
+            query.andWhere('impression.timestamp <= :endDate', { endDate: dateRange.endDate });
+        }
 
-  async getAdStats(adId: string): Promise<AdStats> {
-    const stats = await this.adStatsRepository.findOne({
-      where: { adId },
-    });
+        const impressions = await query.getCount();
+        const uniqueDevices = await query
+            .distinctOn(['impression.deviceType'])
+            .getCount();
 
-    return stats || this.createEmptyStats(adId);
-  }
+        // Obtener eventos de video
+        const events = await this.eventRepository
+            .createQueryBuilder('event')
+            .innerJoin('event.impression', 'impression')
+            .where('impression.creativeId = :creativeId', { creativeId })
+            .andWhere('event.eventType IN (:...types)', {
+                types: ['start', 'complete', 'firstQuartile', 'midpoint', 'thirdQuartile']
+            })
+            .getMany();
 
-  async getAdEvents(
-    adId: string,
-    dateRange?: { startDate?: Date; endDate?: Date },
-  ): Promise<Event[]> {
-    const where: any = { adId };
+        // Calcular tasa de completado
+        const starts = events.filter(e => e.eventType === 'start').length;
+        const completes = events.filter(e => e.eventType === 'complete').length;
+        const completionRate = starts > 0 ? (completes / starts) * 100 : 0;
 
-    if (dateRange?.startDate || dateRange?.endDate) {
-      where.timestamp = Between(
-        dateRange.startDate || new Date(0),
-        dateRange.endDate || new Date(),
-      );
+        // Obtener interacciones
+        const interactions = await this.interactionRepository
+            .createQueryBuilder('interaction')
+            .innerJoin('interaction.impression', 'impression')
+            .where('impression.creativeId = :creativeId', { creativeId })
+            .getMany();
+
+        // Calcular tasa de interacción
+        const interactionRate = impressions > 0 ? (interactions.length / impressions) * 100 : 0;
+
+        // Calcular tiempo promedio de visualización
+        const avgWatchTime = await this.calculateAverageWatchTime(creativeId, dateRange);
+
+        return {
+            impressions,
+            uniqueDevices,
+            completionRate,
+            interactionRate,
+            avgWatchTime,
+            events: this.groupEventsByType(events),
+            interactions: this.groupInteractionsByType(interactions)
+        };
     }
 
-    return this.eventRepository.find({
-      where,
-      order: { timestamp: 'DESC' },
-    });
-  }
+    async getEvents(creativeId: string, dateRange?: DateRange) {
+        const query = this.eventRepository
+            .createQueryBuilder('event')
+            .innerJoinAndSelect('event.impression', 'impression')
+            .where('impression.creativeId = :creativeId', { creativeId })
+            .orderBy('event.timestamp', 'DESC');
 
-  private async updateStats(
-    adId: string,
-    event: string,
-    platform: string = 'unknown',
-  ): Promise<void> {
-    let stats = await this.adStatsRepository.findOne({
-      where: { adId },
-    });
+        if (dateRange?.startDate) {
+            query.andWhere('event.timestamp >= :startDate', { startDate: dateRange.startDate });
+        }
+        if (dateRange?.endDate) {
+            query.andWhere('event.timestamp <= :endDate', { endDate: dateRange.endDate });
+        }
 
-    if (!stats) {
-      stats = this.createEmptyStats(adId);
+        const events = await query.getMany();
+
+        return {
+            events: events.map(event => ({
+                type: event.eventType,
+                timestamp: event.timestamp,
+                platform: event.impression.platform,
+                progress: event.progressPercent,
+                deviceType: event.impression.deviceType,
+                country: event.impression.country
+            }))
+        };
     }
 
-    // Actualizar contadores globales
-    switch (event) {
-      case 'impression':
-        stats.impressions++;
-        break;
-      case 'start':
-        stats.starts++;
-        break;
-      case 'firstQuartile':
-        stats.firstQuartiles++;
-        break;
-      case 'midpoint':
-        stats.midpoints++;
-        break;
-      case 'thirdQuartile':
-        stats.thirdQuartiles++;
-        break;
-      case 'complete':
-        stats.completes++;
-        break;
-      case 'click':
-        stats.clicks++;
-        break;
-      case 'error':
-        stats.errors++;
-        break;
+    async getPlatformStats(creativeId: string, dateRange?: DateRange) {
+        const query = this.impressionRepository
+            .createQueryBuilder('impression')
+            .select('impression.platform', 'platform')
+            .addSelect('COUNT(*)', 'impressions')
+            .addSelect('COUNT(DISTINCT impression.deviceType)', 'uniqueDevices')
+            .where('impression.creativeId = :creativeId', { creativeId })
+            .groupBy('impression.platform');
+
+        if (dateRange?.startDate) {
+            query.andWhere('impression.timestamp >= :startDate', { startDate: dateRange.startDate });
+        }
+        if (dateRange?.endDate) {
+            query.andWhere('impression.timestamp <= :endDate', { endDate: dateRange.endDate });
+        }
+
+        return query.getRawMany();
     }
 
-    // Actualizar estadísticas por plataforma
-    if (!stats.platformStats[platform]) {
-      stats.platformStats[platform] = {
-        impressions: 0,
-        starts: 0,
-        firstQuartiles: 0,
-        midpoints: 0,
-        thirdQuartiles: 0,
-        completes: 0,
-        clicks: 0,
-        errors: 0,
-      };
+    async getInteractions(creativeId: string, dateRange?: DateRange) {
+        const query = this.interactionRepository
+            .createQueryBuilder('interaction')
+            .innerJoinAndSelect('interaction.impression', 'impression')
+            .where('impression.creativeId = :creativeId', { creativeId })
+            .orderBy('interaction.timestamp', 'DESC');
+
+        if (dateRange?.startDate) {
+            query.andWhere('interaction.timestamp >= :startDate', { startDate: dateRange.startDate });
+        }
+        if (dateRange?.endDate) {
+            query.andWhere('interaction.timestamp <= :endDate', { endDate: dateRange.endDate });
+        }
+
+        const interactions = await query.getMany();
+
+        return {
+            interactions: interactions.map(interaction => ({
+                type: interaction.interactionType,
+                timestamp: interaction.timestamp,
+                platform: interaction.impression.platform,
+                metadata: interaction.metadata,
+                deviceType: interaction.impression.deviceType,
+                country: interaction.impression.country
+            }))
+        };
     }
 
-    // Actualizar contador específico de la plataforma
-    switch (event) {
-      case 'impression':
-        stats.platformStats[platform].impressions++;
-        break;
-      case 'start':
-        stats.platformStats[platform].starts++;
-        break;
-      case 'firstQuartile':
-        stats.platformStats[platform].firstQuartiles++;
-        break;
-      case 'midpoint':
-        stats.platformStats[platform].midpoints++;
-        break;
-      case 'thirdQuartile':
-        stats.platformStats[platform].thirdQuartiles++;
-        break;
-      case 'complete':
-        stats.platformStats[platform].completes++;
-        break;
-      case 'click':
-        stats.platformStats[platform].clicks++;
-        break;
-      case 'error':
-        stats.platformStats[platform].errors++;
-        break;
+    private async calculateAverageWatchTime(creativeId: string, dateRange?: DateRange): Promise<number> {
+        const query = this.eventRepository
+            .createQueryBuilder('event')
+            .innerJoin('event.impression', 'impression')
+            .where('impression.creativeId = :creativeId', { creativeId })
+            .andWhere('event.eventType IN (:...types)', {
+                types: ['complete', 'skip']
+            });
+
+        if (dateRange?.startDate) {
+            query.andWhere('event.timestamp >= :startDate', { startDate: dateRange.startDate });
+        }
+        if (dateRange?.endDate) {
+            query.andWhere('event.timestamp <= :endDate', { endDate: dateRange.endDate });
+        }
+
+        const events = await query.getMany();
+        
+        if (events.length === 0) return 0;
+
+        const totalProgress = events.reduce((sum, event) => {
+            if (event.eventType === 'complete') return sum + 100;
+            return sum + (event.progressPercent || 0);
+        }, 0);
+
+        return (totalProgress / events.length) * 0.3; // Asumiendo que 100% = 30 segundos
     }
 
-    await this.adStatsRepository.save(stats);
-  }
+    private groupEventsByType(events: VideoEvent[]): Record<string, number> {
+        return events.reduce((acc, event) => {
+            acc[event.eventType] = (acc[event.eventType] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
+    }
 
-  private createEmptyStats(adId: string): AdStats {
-    return this.adStatsRepository.create({
-      adId,
-      impressions: 0,
-      starts: 0,
-      firstQuartiles: 0,
-      midpoints: 0,
-      thirdQuartiles: 0,
-      completes: 0,
-      clicks: 0,
-      errors: 0,
-      platformStats: {},
-    });
+    private groupInteractionsByType(interactions: Interaction[]): Record<string, number> {
+        return interactions.reduce((acc, interaction) => {
+            acc[interaction.interactionType] = (acc[interaction.interactionType] || 0) + 1;
+            return acc;
+        }, {} as Record<string, number>);
   }
 } 

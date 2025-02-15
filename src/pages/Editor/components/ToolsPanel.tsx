@@ -1,5 +1,5 @@
 import React from 'react';
-import { Stack, IconButton, Tooltip, Divider } from '@mui/material';
+import styled from 'styled-components';
 import {
   SmartButton as ButtonIcon,
   ViewCarousel as CarouselIcon,
@@ -8,13 +8,13 @@ import {
   List as ChoiceIcon,
   Collections as GalleryIcon,
   Download as ExportIcon,
+  Mouse as SelectIcon
 } from '@mui/icons-material';
 import { useEditorStore } from '../../../stores/editorStore';
 import type { ElementType } from '../../../stores/editorStore';
-import VideoUploader from '../../../components/common/VideoUploader';
-import { generateVastXml } from '../../../services/vastExporter';
 
-const tools: { type: Exclude<ElementType, 'video'>; icon: React.ComponentType; tooltip: string }[] = [
+const tools: { type: ElementType; icon: React.ComponentType; tooltip: string }[] = [
+  { type: 'select', icon: SelectIcon, tooltip: 'Seleccionar' },
   { type: 'button', icon: ButtonIcon, tooltip: 'Añadir Botón' },
   { type: 'carousel', icon: CarouselIcon, tooltip: 'Añadir Carousel' },
   { type: 'gallery', icon: GalleryIcon, tooltip: 'Añadir Galería' },
@@ -25,144 +25,139 @@ const tools: { type: Exclude<ElementType, 'video'>; icon: React.ComponentType; t
 
 const defaultContent = {
   button: {
-    image: '',
+    text: 'Nuevo Botón',
     url: '',
     style: {
-      scale: 1,
-      position: { x: 50, y: 50 },
-    },
+      backgroundColor: '#2196f3',
+      color: '#ffffff',
+      borderRadius: '4px',
+      padding: '8px 16px',
+    }
   },
   carousel: {
-    images: [],
+    items: [],
     style: {
-      scale: 1,
-      position: { x: 50, y: 50 },
-    },
+      backgroundColor: '#ffffff',
+      borderRadius: '4px',
+      padding: '16px',
+    }
   },
   gallery: {
-    media: [],
-    currentIndex: 0,
+    images: [],
     style: {
-      scale: 1,
-      position: { x: 50, y: 50 },
-    },
+      backgroundColor: '#ffffff',
+      borderRadius: '4px',
+      padding: '16px',
+    }
   },
   trivia: {
-    questionImage: '',
-    options: [],
-    layout: 'horizontal',
-    feedbackImages: {
-      correct: '',
-      incorrect: '',
-    },
+    question: '¿Nueva pregunta?',
+    options: ['Opción 1', 'Opción 2', 'Opción 3'],
+    correctOption: 0,
     style: {
-      scale: 1,
       backgroundColor: '#2196f3',
-      selectedColor: '#64b5f6',
-      correctColor: '#4caf50',
-      incorrectColor: '#f44336',
-    },
-    selectedOption: null,
-    showResult: false,
+      color: '#ffffff',
+      borderRadius: '4px',
+      padding: '16px',
+    }
   },
   qr: {
-    url: '',
-    type: 'web'
+    url: 'https://example.com',
+    style: {
+      backgroundColor: '#ffffff',
+      padding: '16px',
+    }
   },
   choice: {
-    options: [],
-    redirectUrl: '',
-    selectedOption: null,
+    options: ['Opción 1', 'Opción 2', 'Opción 3'],
+    style: {
+      backgroundColor: '#ffffff',
+      borderRadius: '4px',
+      padding: '16px',
+    }
   },
+  select: {},
+  video: {}
 } as const;
 
-const ToolsPanel: React.FC = () => {
+const ToolButton = styled.button<{ active?: boolean }>`
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background-color: ${({ active, theme }) => (active ? theme.colors.primary : 'transparent')};
+  border: none;
+  border-radius: ${({ theme }) => theme.borderRadius.sm};
+  cursor: pointer;
+  color: ${({ active, theme }) => (active ? theme.colors.backgroundWhite : theme.colors.textPrimary)};
+  transition: ${({ theme }) => theme.transitions.default};
+
+  &:hover {
+    background-color: ${({ active, theme }) => (active ? theme.colors.primaryDark : theme.colors.backgroundLight)};
+  }
+
+  svg {
+    width: 24px;
+    height: 24px;
+  }
+`;
+
+const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: ${({ theme }) => theme.spacing.md};
+  gap: ${({ theme }) => theme.spacing.md};
+`;
+
+const ToolGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.spacing.sm};
+  width: 100%;
+`;
+
+interface ToolsPanelProps {
+  onShowAnalytics?: () => void;
+  onExport?: () => void;
+}
+
+const ToolsPanel: React.FC<ToolsPanelProps> = ({ onShowAnalytics, onExport }) => {
+  const [selectedTool, setSelectedTool] = React.useState<ElementType>('select');
   const addElement = useEditorStore((state) => state.addElement);
-  const editorState = useEditorStore((state) => ({
-    elements: state.elements,
-    background: state.background,
-    timeline: state.timeline
-  }));
 
-  const handleAddElement = (type: Exclude<ElementType, 'video'>) => {
-    addElement(type, defaultContent[type]);
-  };
-
-  const handleExportVast = () => {
-    const options = {
-      baseUrl: window.location.origin,
-      impressionUrl: `${window.location.origin}/track/impression`,
-      clickTrackingUrl: `${window.location.origin}/track/click`,
-      startTrackingUrl: `${window.location.origin}/track/start`,
-      completeTrackingUrl: `${window.location.origin}/track/complete`,
-      skipTrackingUrl: `${window.location.origin}/track/skip`,
-      interactionTrackingUrl: `${window.location.origin}/track/interaction`,
-      viewableImpressionUrl: `${window.location.origin}/track/viewable`,
-      quartileTrackingUrls: {
-        firstQuartile: `${window.location.origin}/track/firstQuartile`,
-        midpoint: `${window.location.origin}/track/midpoint`,
-        thirdQuartile: `${window.location.origin}/track/thirdQuartile`,
-      },
-      videoFormats: [
-        {
-          url: editorState.background?.url || '',
-          codec: 'H.264' as const,
-          bitrate: 2000,
-          width: 1920,
-          height: 1080,
-          delivery: 'progressive' as const
-        }
-      ],
-      fallbackVideoUrl: editorState.background?.url || '',
-      platform: 'roku' as const
-    };
-
-    const vastXml = generateVastXml(editorState, options);
-    const blob = new Blob([vastXml], { type: 'application/xml' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `adsmood-vast-${Date.now()}.xml`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  const handleToolClick = (type: ElementType) => {
+    setSelectedTool(type);
+    if (type !== 'select') {
+      addElement(type, defaultContent[type]);
+    }
   };
 
   return (
-    <Stack spacing={1}>
-      <VideoUploader />
-      {tools.map(({ type, icon: Icon, tooltip }) => (
-        <Tooltip key={type} title={tooltip} placement="right">
-          <IconButton
-            onClick={() => handleAddElement(type)}
-            sx={{
-              width: '44px',
-              height: '44px',
-            }}
+    <Container>
+      <ToolGroup>
+        {tools.map(({ type, icon: Icon, tooltip }) => (
+          <ToolButton
+            key={type}
+            active={selectedTool === type}
+            onClick={() => handleToolClick(type)}
+            title={tooltip}
           >
             <Icon />
-          </IconButton>
-        </Tooltip>
-      ))}
-      <Divider sx={{ my: 1 }} />
-      <Tooltip title="Exportar VAST" placement="right">
-        <IconButton
-          onClick={handleExportVast}
-          sx={{
-            width: '44px',
-            height: '44px',
-            backgroundColor: 'primary.main',
-            color: 'white',
-            '&:hover': {
-              backgroundColor: 'primary.dark',
-            },
-          }}
+          </ToolButton>
+        ))}
+      </ToolGroup>
+
+      <ToolGroup>
+        <ToolButton
+          onClick={onExport}
+          title="Exportar"
         >
           <ExportIcon />
-        </IconButton>
-      </Tooltip>
-    </Stack>
+        </ToolButton>
+      </ToolGroup>
+    </Container>
   );
 };
 

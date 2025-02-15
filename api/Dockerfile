@@ -1,39 +1,29 @@
-# Etapa de construcción
-FROM node:18-alpine AS builder
-
-WORKDIR /app
-
-# Copiar archivos de configuración
-COPY package*.json ./
-COPY tsconfig*.json ./
-
-# Instalar dependencias
-RUN npm ci
-
-# Copiar código fuente
-COPY src/ ./src/
-
-# Construir la aplicación
-RUN npm run build
-
-# Etapa de producción
+# Usar una imagen base de Node.js con Alpine Linux
 FROM node:18-alpine
 
+# Instalar FFmpeg y otras dependencias necesarias
+RUN apk add --no-cache ffmpeg
+
+# Crear directorio de la aplicación
 WORKDIR /app
 
-# Copiar archivos de configuración y dependencias compiladas
+# Copiar archivos de dependencias
 COPY package*.json ./
-RUN npm ci --only=production
 
-# Copiar archivos compilados
-COPY --from=builder /app/dist ./dist/
+# Instalar dependencias
+RUN npm install
 
-# Variables de entorno
-ENV NODE_ENV=production
-ENV PORT=3001
+# Copiar el resto del código fuente
+COPY . .
 
-# Exponer puerto
+# Crear directorio para uploads
+RUN mkdir -p uploads/conversions
+
+# Compilar la aplicación
+RUN npm run build
+
+# Exponer el puerto
 EXPOSE 3001
 
-# Comando de inicio
+# Comando para iniciar la aplicación
 CMD ["npm", "run", "start:prod"] 
