@@ -1,26 +1,15 @@
-export interface TimelineElement {
-  id: string;
-  name: string;
-  type: 'video' | 'audio' | 'text' | 'image';
-  startTime: number;
-  duration: number;
-  track: number;
-  properties: {
-    [key: string]: any;
-  };
-  keyframes: KeyframeTrack[];
-}
-
-export interface KeyframeTrack {
-  property: 'position' | 'rotation' | 'opacity' | 'scale';
-  keyframes: Keyframe[];
-}
-
-export interface Keyframe {
-  time: number;
-  value: number | Position | Scale;
-  easing: EasingType;
-}
+export type ElementType = 
+  | 'video'
+  | 'audio'
+  | 'text'
+  | 'image'
+  | 'button'
+  | 'carousel'
+  | 'gallery'
+  | 'trivia'
+  | 'qr'
+  | 'choice'
+  | 'select';
 
 export interface Position {
   x: number;
@@ -32,6 +21,11 @@ export interface Scale {
   y: number;
 }
 
+export interface Size {
+  width: number;
+  height: number;
+}
+
 export type EasingType = 
   | 'linear'
   | 'easeInOut'
@@ -39,6 +33,46 @@ export type EasingType =
   | 'easeOut'
   | 'bounceOut'
   | 'elasticOut';
+
+export interface Keyframe {
+  time: number;
+  value: number | Position | Scale;
+  easing: EasingType;
+}
+
+export interface KeyframeTrack {
+  property: 'position' | 'rotation' | 'opacity' | 'scale';
+  keyframes: Keyframe[];
+}
+
+export interface ElementProperties {
+  text?: string;
+  url?: string;
+  style?: {
+    fontSize?: string;
+    fontWeight?: string | number;
+    color?: string;
+    backgroundColor?: string;
+    [key: string]: any;
+  };
+  [key: string]: any;
+}
+
+export interface TimelineElement {
+  id: string;
+  name: string;
+  type: ElementType;
+  position: Position;
+  size: Size;
+  content: any;
+  zIndex: number;
+  isVisible: boolean;
+  startTime: number;
+  duration: number;
+  track: number;
+  properties: ElementProperties;
+  keyframes: KeyframeTrack[];
+}
 
 export interface TimelineRulerProps {
   scale: number;
