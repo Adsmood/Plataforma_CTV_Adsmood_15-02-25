@@ -1,4 +1,5 @@
 import 'styled-components';
+import { Theme as MuiTheme } from '@mui/material/styles';
 
 interface Typography {
     fontFamily: string;
@@ -71,15 +72,29 @@ interface ZIndex {
     tooltip: number;
 }
 
+declare module '@mui/material/styles' {
+  interface TypeBackground {
+    dark: string;
+  }
+}
+
 declare module 'styled-components' {
     export interface DefaultTheme {
-        typography: Typography;
-        colors: Colors;
-        spacing: Spacing;
-        borderRadius: BorderRadius;
-        shadows: Shadows;
-        transitions: Transitions;
-        breakpoints: Breakpoints;
-        zIndex: ZIndex;
+        colors: {
+            background: {
+                dark: string;
+                default: string;
+                paper: string;
+            };
+            primary: {
+                main: string;
+                light: string;
+                dark: string;
+            };
+            text: {
+                primary: string;
+                secondary: string;
+            };
+        };
     }
 } 

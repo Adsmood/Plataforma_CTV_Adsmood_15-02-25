@@ -1,7 +1,19 @@
 import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
+import { KeyframeTrack } from '../types/timeline';
 
-export type ElementType = 'video' | 'button' | 'carousel' | 'gallery' | 'trivia' | 'qr' | 'choice' | 'select';
+export type ElementType = 
+  | 'video'
+  | 'audio'
+  | 'text'
+  | 'image'
+  | 'button'
+  | 'carousel'
+  | 'gallery'
+  | 'trivia'
+  | 'qr'
+  | 'choice'
+  | 'select';
 
 export interface Position {
   x: number;
@@ -24,12 +36,21 @@ interface Background {
 
 export interface Element {
   id: string;
+  name: string;
   type: ElementType;
   position: Position;
   size: Size;
   content: any;
   zIndex: number;
   isVisible: boolean;
+  startTime: number;
+  duration: number;
+  endTime?: number;
+  track: number;
+  properties: {
+    [key: string]: any;
+  };
+  keyframes: KeyframeTrack[];
 }
 
 export interface EditorState {
@@ -69,12 +90,35 @@ export const useEditorStore = create<EditorState>((set) => ({
         ...state.elements,
         {
           id: uuidv4(),
+          name: `Elemento ${state.elements.length + 1}`,
           type,
           position: { x: 0, y: 0 },
           size: { width: 200, height: 100 },
           content,
           zIndex: state.elements.length,
           isVisible: true,
+          startTime: 0,
+          duration: 5,
+          track: state.elements.length,
+          properties: {},
+          keyframes: [
+            {
+              property: 'position',
+              keyframes: [],
+            },
+            {
+              property: 'rotation',
+              keyframes: [],
+            },
+            {
+              property: 'scale',
+              keyframes: [],
+            },
+            {
+              property: 'opacity',
+              keyframes: [],
+            },
+          ],
         },
       ],
     })),

@@ -1,9 +1,10 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { VideoConverterService } from './video-converter.service';
 import { StorageService } from './storage.service';
 import * as path from 'path';
 import * as fs from 'fs';
 import { PlatformSpec } from '../types/platforms';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 
 interface QueueItem {
     id: string;
@@ -32,15 +33,38 @@ interface QueueItem {
     error?: string;
 }
 
+interface ConversionJob {
+  id: string;
+  inputUrl: string;
+  platform: string;
+  format: string;
+  preset: string;
+  customConfig?: {
+    resolution: string;
+    bitrate: string;
+    quality: string;
+  };
+  status: 'pending' | 'processing' | 'completed' | 'failed';
+  progress: number;
+  result?: {
+    url: string;
+    thumbnailUrl: string;
+  };
+  error?: string;
+}
+
 @Injectable()
-export class ConversionQueueService {
+export class ConversionQueueService implements OnModuleInit {
     private readonly logger = new Logger(ConversionQueueService.name);
     private queue: Map<string, QueueItem> = new Map();
     private processing: boolean = false;
+    private maxConcurrent = 2;
+    private currentJobs = 0;
 
     constructor(
         private readonly videoConverter: VideoConverterService,
-        private readonly storageService: StorageService
+        private readonly storageService: StorageService,
+        private readonly eventEmitter: EventEmitter2,
     ) {
         // Crear directorio de trabajo si no existe
         const workDir = path.join(process.cwd(), 'uploads', 'conversions');
@@ -53,6 +77,11 @@ export class ConversionQueueService {
             this.storageService.cleanOldFiles('conversions', 24)
                 .catch(error => this.logger.error('Error cleaning old files:', error));
         }, 6 * 60 * 60 * 1000);
+    }
+
+    async onModuleInit() {
+        // Iniciar el procesamiento de la cola
+        this.processQueue();
     }
 
     async addToQueue(
@@ -80,7 +109,7 @@ export class ConversionQueueService {
     }
 
     private async processQueue() {
-        if (this.processing || this.queue.size === 0) return;
+        if (this.processing || this.queue.size === 0 || this.currentJobs >= this.maxConcurrent) return;
 
         this.processing = true;
         const pendingItems = Array.from(this.queue.values())
@@ -233,5 +262,104 @@ export class ConversionQueueService {
             });
         }
         this.queue.delete(id);
+    }
+
+    async addJob(
+        inputUrl: string,
+        platform: string,
+        format: string,
+        preset: string,
+        customConfig?: ConversionJob['customConfig'],
+    ): Promise<string> {
+        const job: ConversionJob = {
+            id: Math.random().toString(36).substr(2, 9),
+            inputUrl,
+            platform,
+            format,
+            preset,
+            customConfig,
+            status: 'pending',
+            progress: 0,
+        };
+
+        this.queue.push(job);
+        this.eventEmitter.emit('conversion.queued', { jobId: job.id });
+
+        // Intentar procesar la cola si no está en proceso
+        if (!this.processing) {
+            this.processQueue();
+        }
+
+        return job.id;
+    }
+
+    private async processJob(job: ConversionJob) {
+        try {
+            job.status = 'processing';
+            this.eventEmitter.emit('conversion.started', { jobId: job.id });
+
+            // Configurar parámetros de conversión
+            const config = {
+                codec: this.videoConverter.getCodecFromFormat(job.format),
+                resolution: job.customConfig?.resolution || 
+                           this.videoConverter.getResolutionFromPreset(job.preset),
+                bitrate: job.customConfig?.bitrate || 
+                        this.videoConverter.getBitrateFromPreset(job.preset),
+                quality: job.customConfig?.quality || 'Alta',
+            };
+
+            // Convertir el video
+            const outputFileName = `${job.id}_${job.platform}_${job.format}.mp4`;
+            const outputUrl = await this.videoConverter.convertVideo(
+                job.inputUrl,
+                outputFileName,
+                config,
+            );
+
+            // Generar thumbnail
+            const thumbnailUrl = await this.videoConverter.generateThumbnail(job.inputUrl);
+
+            // Actualizar estado del trabajo
+            job.status = 'completed';
+            job.progress = 100;
+            job.result = {
+                url: outputUrl,
+                thumbnailUrl,
+            };
+
+            this.eventEmitter.emit('conversion.completed', {
+                jobId: job.id,
+                result: job.result,
+            });
+        } catch (error) {
+            job.status = 'failed';
+            job.error = error.message;
+            this.eventEmitter.emit('conversion.failed', {
+                jobId: job.id,
+                error: error.message,
+            });
+        }
+    }
+
+    getJobStatus(jobId: string): Partial<ConversionJob> | null {
+        const job = this.queue.find(j => j.id === jobId);
+        if (!job) return null;
+
+        return {
+            id: job.id,
+            status: job.status,
+            progress: job.progress,
+            result: job.result,
+            error: job.error,
+        };
+    }
+
+    cancelJob(jobId: string): boolean {
+        const index = this.queue.findIndex(j => j.id === jobId);
+        if (index === -1) return false;
+
+        this.queue.splice(index, 1);
+        this.eventEmitter.emit('conversion.cancelled', { jobId });
+        return true;
     }
 } 

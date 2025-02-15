@@ -1,5 +1,6 @@
 import React from 'react';
-import { Box } from '@mui/material';
+import styled from 'styled-components';
+import { VideoEditor } from '../../../components/VideoEditor';
 import { useEditorStore } from '../../../stores/editorStore';
 import VideoElement from './elements/VideoElement';
 import ButtonElement from './elements/ButtonElement';
@@ -21,6 +22,16 @@ const elementComponents = {
   choice: ChoiceElement,
 } as const;
 
+const CanvasContainer = styled.div`
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${props => props.theme.colors.background.default};
+`;
+
 const Canvas: React.FC = () => {
   const { elements, background, selectedElement, updateElement } = useEditorStore();
 
@@ -37,30 +48,12 @@ const Canvas: React.FC = () => {
   };
 
   return (
-    <Box
-      sx={{
-        width: '100%',
-        height: '100%',
-        position: 'relative',
-        overflow: 'hidden',
-        bgcolor: 'background.default',
-      }}
-    >
-      {background && (
-        <Box
-          component={background.type === 'video' ? 'video' : 'img'}
-          src={background.url}
-          autoPlay={background.type === 'video'}
-          loop={background.type === 'video'}
-          muted={background.type === 'video'}
-          sx={{
-            position: 'absolute',
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            transform: `scale(${background.style.scale}) translate(${background.style.position.x - 50}%, ${background.style.position.y - 50}%)`,
-            transformOrigin: 'center',
-            transition: 'transform 0.2s ease-out',
+    <CanvasContainer>
+      {background?.type === 'video' && (
+        <VideoEditor
+          videoUrl={background.url}
+          onVideoChange={(duration) => {
+            useEditorStore.getState().updateTimeline({ duration });
           }}
         />
       )}
@@ -92,7 +85,7 @@ const Canvas: React.FC = () => {
             </ResizableElement>
           );
         })}
-    </Box>
+    </CanvasContainer>
   );
 };
 

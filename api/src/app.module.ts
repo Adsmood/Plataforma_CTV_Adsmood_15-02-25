@@ -11,6 +11,7 @@ import { ConversionQueueService } from './services/conversion-queue.service';
 import { StorageService } from './services/storage.service';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { join } from 'path';
       rootPath: join(__dirname, '..', 'uploads'),
       serveRoot: '/conversions',
     }),
+    EventEmitterModule.forRoot(),
   ],
   controllers: [ExportController],
   providers: [VideoConverterService, ConversionQueueService, StorageService],

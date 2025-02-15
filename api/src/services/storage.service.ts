@@ -1,87 +1,62 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import * as path from 'path';
-import * as fs from 'fs';
+import * as fs from 'fs/promises';
 
 @Injectable()
 export class StorageService {
-    private readonly logger = new Logger(StorageService.name);
-    private readonly assetsUrl: string;
-    private readonly uploadsPath: string;
+    private readonly uploadDir: string;
+    private readonly assetsBaseUrl: string;
 
-    constructor() {
-        this.assetsUrl = process.env.ASSETS_URL || 'https://adsmood-ctv-assets.onrender.com';
-        this.uploadsPath = path.join(process.cwd(), 'uploads');
-        
-        // Asegurar que el directorio de uploads existe
-        if (!fs.existsSync(this.uploadsPath)) {
-            fs.mkdirSync(this.uploadsPath, { recursive: true });
-        }
+    constructor(private readonly configService: ConfigService) {
+        this.uploadDir = this.configService.get<string>('UPLOAD_DIR', './uploads');
+        this.assetsBaseUrl = this.configService.get<string>('ASSETS_URL', 'http://localhost:3000');
+        this.initStorage();
     }
 
-    async saveFile(
-        buffer: Buffer,
-        filename: string,
-        subdirectory: string = 'conversions'
-    ): Promise<string> {
+    private async initStorage() {
         try {
-            const dirPath = path.join(this.uploadsPath, subdirectory);
-            if (!fs.existsSync(dirPath)) {
-                fs.mkdirSync(dirPath, { recursive: true });
-            }
-
-            const filePath = path.join(dirPath, filename);
-            await fs.promises.writeFile(filePath, buffer);
-
-            // Construir URL pública
-            const publicPath = path.join(subdirectory, filename).replace(/\\/g, '/');
-            return `${this.assetsUrl}/${publicPath}`;
+            await fs.mkdir(this.uploadDir, { recursive: true });
+            await fs.mkdir(path.join(this.uploadDir, 'videos'), { recursive: true });
+            await fs.mkdir(path.join(this.uploadDir, 'images'), { recursive: true });
         } catch (error) {
-            this.logger.error(`Error saving file ${filename}:`, error);
-            throw error;
+            console.error('Error al inicializar el almacenamiento:', error);
         }
     }
 
-    async deleteFile(filename: string, subdirectory: string = 'conversions'): Promise<void> {
+    async uploadVideo(filename: string, data: Buffer): Promise<string> {
+        const videoPath = path.join(this.uploadDir, 'videos', filename);
+        await fs.writeFile(videoPath, data);
+        return `${this.assetsBaseUrl}/videos/${filename}`;
+    }
+
+    async uploadImage(filename: string, data: Buffer): Promise<string> {
+        const imagePath = path.join(this.uploadDir, 'images', filename);
+        await fs.writeFile(imagePath, data);
+        return `${this.assetsBaseUrl}/images/${filename}`;
+    }
+
+    async deleteFile(filepath: string): Promise<void> {
         try {
-            const filePath = path.join(this.uploadsPath, subdirectory, filename);
-            if (fs.existsSync(filePath)) {
-                await fs.promises.unlink(filePath);
-            }
+            await fs.unlink(filepath);
         } catch (error) {
-            this.logger.error(`Error deleting file ${filename}:`, error);
-            throw error;
+            console.error('Error al eliminar archivo:', error);
         }
     }
 
-    async cleanOldFiles(
-        subdirectory: string = 'conversions',
-        maxAgeHours: number = 24
-    ): Promise<void> {
+    async getFileUrl(filename: string, type: 'video' | 'image'): Promise<string> {
+        const subdir = type === 'video' ? 'videos' : 'images';
+        return `${this.assetsBaseUrl}/${subdir}/${filename}`;
+    }
+
+    async fileExists(filename: string, type: 'video' | 'image'): Promise<boolean> {
+        const subdir = type === 'video' ? 'videos' : 'images';
+        const filepath = path.join(this.uploadDir, subdir, filename);
         try {
-            const dirPath = path.join(this.uploadsPath, subdirectory);
-            if (!fs.existsSync(dirPath)) return;
-
-            const files = await fs.promises.readdir(dirPath);
-            const now = Date.now();
-            const maxAge = maxAgeHours * 60 * 60 * 1000;
-
-            for (const file of files) {
-                const filePath = path.join(dirPath, file);
-                const stats = await fs.promises.stat(filePath);
-                
-                if (now - stats.mtimeMs > maxAge) {
-                    await fs.promises.unlink(filePath);
-                    this.logger.debug(`Deleted old file: ${file}`);
-                }
-            }
-        } catch (error) {
-            this.logger.error(`Error cleaning old files:`, error);
-            throw error;
+            await fs.access(filepath);
+            return true;
+        } catch {
+            return false;
         }
-    }
-
-    getPublicUrl(filename: string, subdirectory: string = 'conversions'): string {
-        const publicPath = path.join(subdirectory, filename).replace(/\\/g, '/');
-        return `${this.assetsUrl}/${publicPath}`;
     }
 } 
